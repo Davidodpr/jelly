@@ -37,8 +37,10 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
     // Game State
     const [score, setScore] = useState(0);
     const [highScore, setHighScore] = useState(0);
-    const [lives, setLives] = useState(3);
+    const [lives, setLives] = useState(5); // Start with 5 lives
     const [gameOver, setGameOver] = useState(false);
+    const [gameStage, setGameStage] = useState(0); // 0: Normal, 1: Prospecting, 2: Qualified, 3: Closed Won
+    const [notification, setNotification] = useState<{ text: string, color: string } | null>(null);
 
     // Physics State (Refs for performance)
     const ballsRef = useRef<Ball[]>([]);
@@ -73,10 +75,32 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
         }
     }, [score, highScore]);
 
+    // Progression Logic
+    useEffect(() => {
+        let newStage = 0;
+        if (score >= 20) newStage = 3;
+        else if (score >= 10) newStage = 2;
+        else if (score >= 5) newStage = 1;
+
+        if (newStage > gameStage) {
+            setGameStage(newStage);
+            // Show Notification
+            let text = "";
+            let color = "#ffffff";
+            if (newStage === 1) { text = "PROSPECTING MODE: SLOW MO"; color = "#00f5ff"; }
+            if (newStage === 2) { text = "QUALIFIED LEAD: BIG HOOP"; color = "#ffbe0b"; }
+            if (newStage === 3) { text = "CLOSED WON: FIREBALL!"; color = "#ff006e"; }
+
+            setNotification({ text, color });
+            setTimeout(() => setNotification(null), 3000);
+        }
+    }, [score, gameStage]);
+
     const resetGame = () => {
         setScore(0);
-        setLives(3);
+        setLives(5);
         setGameOver(false);
+        setGameStage(0);
         ballsRef.current = [];
         particlesRef.current = [];
         hoopRef.current = { x: 50, direction: 1, speed: 0.5 };
@@ -109,8 +133,13 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
 
         // Update Hoop
         let hoop = hoopRef.current;
-        // Difficulty progression: Speed increases with score
-        const targetSpeed = 0.5 + (score * 0.08);
+
+        // Difficulty & Progression Modifiers
+        let speedMultiplier = 1;
+        if (gameStage === 1) speedMultiplier = 0.5; // Slow down for Prospecting
+
+        // Base speed progression
+        const targetSpeed = (0.5 + (score * 0.08)) * speedMultiplier;
         hoop.speed = hoop.speed * 0.99 + targetSpeed * 0.01;
 
         hoop.x += hoop.direction * hoop.speed;
@@ -121,7 +150,9 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
 
         // Hoop Dimensions
         const hoopY = height * 0.2;
-        const hoopW = width * 0.25;
+        let hoopW = width * 0.25;
+        if (gameStage >= 2) hoopW *= 1.2; // Bigger hoop for Qualified
+
         const hoopLeft = (hoop.x / 100) * width - hoopW / 2;
         const hoopRight = (hoop.x / 100) * width + hoopW / 2;
         const hoopCenter = (hoopLeft + hoopRight) / 2;
@@ -133,6 +164,19 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
 
             ball.vy += GRAVITY;
 
+            // Fireball Effect (Stage 3)
+            if (gameStage >= 3 && Math.random() > 0.5) {
+                particlesRef.current.push({
+                    id: Math.random(),
+                    x: ball.x,
+                    y: ball.y,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    life: 0.5,
+                    color: "#ff4d00"
+                });
+            }
+
             if (ball.inHoop) {
                 // Net Physics: Funnel towards center, dampen X movement
                 const distToCenter = hoopCenter - ball.x;
@@ -143,7 +187,8 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
                 // Check if exited net bottom
                 if (ball.y > netBottom) {
                     ball.active = false;
-                    setScore(s => s + 1);
+                    const points = gameStage >= 3 ? 2 : 1; // Double points for Closed Won
+                    setScore(s => s + points);
                     setLives(l => Math.min(5, l + 1));
                     spawnParticles(ball.x, ball.y, 20, "#00f5ff"); // Confetti
                 }
@@ -188,7 +233,11 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
                     } else if (Math.abs(ball.x - hoopLeft) < 15 || Math.abs(ball.x - hoopRight) < 15) {
                         // Rim bounce
                         ball.vy *= -BOUNCE;
-                        ball.vx += (ball.x < hoopLeft + hoopW / 2 ? -5 : 5);
+                        // Push away from center to prevent "landing on top"
+                        const pushDir = ball.x < hoopCenter ? -1 : 1;
+                        ball.vx = pushDir * Math.max(Math.abs(ball.vx), 3); // Ensure minimum push
+                        // Force y slightly up to avoid sticking
+                        ball.y = hoopY - 16;
                     }
                 }
             }
@@ -212,7 +261,7 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
         setUiParticles([...particlesRef.current]);
 
         requestRef.current = requestAnimationFrame(gameLoop);
-    }, [score, lives, gameOver]);
+    }, [score, lives, gameOver, gameStage]);
 
     useEffect(() => {
         if (isOpen && !gameOver) {
@@ -341,6 +390,25 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
                             </div>
                         </div>
 
+                        {/* Notification Popup */}
+                        <AnimatePresence>
+                            {notification && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20, scale: 0.5 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    className="absolute top-24 left-0 w-full text-center z-50 pointer-events-none"
+                                >
+                                    <div
+                                        className="inline-block px-6 py-2 rounded-full bg-black/80 backdrop-blur border-2 shadow-[0_0_30px_currentColor]"
+                                        style={{ borderColor: notification.color, color: notification.color, boxShadow: `0 0 30px ${notification.color}` }}
+                                    >
+                                        <span className="text-xl font-black tracking-widest uppercase">{notification.text}</span>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         {/* Lives */}
                         <div className="absolute top-6 left-1/2 -translate-x-1/2 flex gap-2 z-30">
                             {[...Array(5)].map((_, i) => (
@@ -378,8 +446,11 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
 
                         {/* Hoop */}
                         <div
-                            className="absolute top-[20%] -translate-x-1/2 w-[25%] aspect-square z-10 pointer-events-none"
-                            style={{ left: `${uiHoopX}%` }}
+                            className="absolute top-[20%] -translate-x-1/2 aspect-square z-10 pointer-events-none transition-all duration-500"
+                            style={{
+                                left: `${uiHoopX}%`,
+                                width: gameStage >= 2 ? '30%' : '25%' // Bigger hoop at Stage 2
+                            }}
                         >
                             {/* Backboard */}
                             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[140%] h-[80%] bg-white/10 border-2 border-[#00f5ff] rounded-lg backdrop-blur-sm shadow-[0_0_15px_#00f5ff] z-10">
