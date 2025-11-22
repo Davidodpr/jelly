@@ -143,8 +143,10 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
         hoop.speed = hoop.speed * 0.99 + targetSpeed * 0.01;
 
         hoop.x += hoop.direction * hoop.speed;
-        if (hoop.x > 90 || hoop.x < 10) {
-            hoop.direction *= -1;
+        if (hoop.x > 90 && hoop.direction > 0) {
+            hoop.direction = -1;
+        } else if (hoop.x < 10 && hoop.direction < 0) {
+            hoop.direction = 1;
         }
         setUiHoopX(hoop.x);
 
@@ -235,9 +237,9 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
                         ball.vy *= -BOUNCE;
                         // Push away from center to prevent "landing on top"
                         const pushDir = ball.x < hoopCenter ? -1 : 1;
-                        ball.vx = pushDir * Math.max(Math.abs(ball.vx), 3); // Ensure minimum push
+                        ball.vx = pushDir * Math.max(Math.abs(ball.vx), 6); // Stronger push (was 3)
                         // Force y slightly up to avoid sticking
-                        ball.y = hoopY - 16;
+                        ball.y = hoopY - 20; // Higher clearance
                     }
                 }
             }
