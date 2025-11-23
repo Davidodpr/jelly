@@ -11,80 +11,80 @@ let dailyRequestCount = 0;
 let lastResetDate = new Date().toDateString();
 
 function checkAndResetDaily() {
-    const today = new Date().toDateString();
-    if (today !== lastResetDate) {
-        dailyRequestCount = 0;
-        lastResetDate = today;
-        console.log(`[Rate Limit] Daily counter reset for ${today}`);
-    }
+  const today = new Date().toDateString();
+  if (today !== lastResetDate) {
+    dailyRequestCount = 0;
+    lastResetDate = today;
+    console.log(`[Rate Limit] Daily counter reset for ${today}`);
+  }
 }
 
 // Cleanup old rate limit entries every minute
 setInterval(() => {
-    const now = Date.now();
-    for (const [ip, time] of rateLimit.entries()) {
-        if (now - time > RATE_LIMIT_WINDOW) {
-            rateLimit.delete(ip);
-        }
+  const now = Date.now();
+  for (const [ip, time] of rateLimit.entries()) {
+    if (now - time > RATE_LIMIT_WINDOW) {
+      rateLimit.delete(ip);
     }
-    checkAndResetDaily();
+  }
+  checkAndResetDaily();
 }, RATE_LIMIT_WINDOW);
 
 // Helper to fetch and clean site content
 async function fetchSiteContent(url: string): Promise<string> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout for deep scan
+
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Jellymove-Audit/3.0'
+      }
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) return "";
+
+    const html = await res.text();
+
+    // Basic cleanup
+    const text = html
+      .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gmi, "")
+      .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gmi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // DEEP SCAN: Try to find and fetch pricing/about pages if linked
+    // This is a simplified version. In a real deep scan, we'd parse the HTML properly.
+    // Here we just guess common paths if we see them in the text/links (simplified).
+    // Actually, let's just try to fetch /pricing and /about blindly if the homepage fetch worked.
+    // It's faster than parsing.
+
+    const baseUrl = url.replace(/\/$/, "");
+    // const subPages = ["/pricing", "/about", "/tjanster", "/services"]; // Unused
+    let extraContent = "";
+
+    // We'll try to fetch at least one sub-page if it exists
+    // To save time/bandwidth, we race them or just pick the most likely one.
+    // Let's try /pricing first as it's most valuable for "Price" lens.
+
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout for deep scan
-
-        const res = await fetch(url, {
-            signal: controller.signal,
-            headers: {
-                'User-Agent': 'Jellymove-Audit/3.0'
-            }
-        });
-        clearTimeout(timeoutId);
-
-        if (!res.ok) return "";
-
-        const html = await res.text();
-
-        // Basic cleanup
-        const text = html
-            .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gmi, "")
-            .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gmi, "")
-            .replace(/<[^>]+>/g, " ")
-            .replace(/\s+/g, " ")
-            .trim();
-
-        // DEEP SCAN: Try to find and fetch pricing/about pages if linked
-        // This is a simplified version. In a real deep scan, we'd parse the HTML properly.
-        // Here we just guess common paths if we see them in the text/links (simplified).
-        // Actually, let's just try to fetch /pricing and /about blindly if the homepage fetch worked.
-        // It's faster than parsing.
-
-        const baseUrl = url.replace(/\/$/, "");
-        // const subPages = ["/pricing", "/about", "/tjanster", "/services"]; // Unused
-        let extraContent = "";
-
-        // We'll try to fetch at least one sub-page if it exists
-        // To save time/bandwidth, we race them or just pick the most likely one.
-        // Let's try /pricing first as it's most valuable for "Price" lens.
-
-        try {
-            const pricingRes = await fetch(`${baseUrl}/pricing`, { signal: AbortSignal.timeout(3000) });
-            if (pricingRes.ok) {
-                const pricingHtml = await pricingRes.text();
-                extraContent += "\n\n--- PRICING PAGE ---\n" + pricingHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 5000);
-            }
-        } catch {
-            // Ignore pricing fetch error
-        }
-
-        return (text.slice(0, 15000) + extraContent).slice(0, 20000);
-    } catch (error) {
-        console.warn("Failed to fetch site content:", error);
-        return "";
+      const pricingRes = await fetch(`${baseUrl}/pricing`, { signal: AbortSignal.timeout(3000) });
+      if (pricingRes.ok) {
+        const pricingHtml = await pricingRes.text();
+        extraContent += "\n\n--- PRICING PAGE ---\n" + pricingHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 5000);
+      }
+    } catch {
+      // Ignore pricing fetch error
     }
+
+    return (text.slice(0, 15000) + extraContent).slice(0, 20000);
+  } catch (error) {
+    console.warn("Failed to fetch site content:", error);
+    return "";
+  }
 }
 
 const FEW_SHOT_EXAMPLES = `
@@ -194,80 +194,80 @@ Output:
 `;
 
 export async function POST(req: Request) {
-    try {
-        // 1. Global Daily Limit Check (server-side, can't be bypassed)
-        checkAndResetDaily();
-        if (dailyRequestCount >= DAILY_LIMIT) {
-            console.log(`[Rate Limit] Daily limit reached: ${dailyRequestCount}/${DAILY_LIMIT}`);
-            return NextResponse.json(
-                { error: "We've hit our daily limit. Come back tomorrow!" },
-                { status: 429 }
-            );
-        }
+  try {
+    // 1. Global Daily Limit Check (server-side, can't be bypassed)
+    checkAndResetDaily();
+    if (dailyRequestCount >= DAILY_LIMIT) {
+      console.log(`[Rate Limit] Daily limit reached: ${dailyRequestCount}/${DAILY_LIMIT}`);
+      return NextResponse.json(
+        { error: "We've hit our daily limit. Come back tomorrow!" },
+        { status: 429 }
+      );
+    }
 
-        // 2. Per-IP Rate Limiting
-        const ip = req.headers.get("x-forwarded-for") || "unknown";
-        const now = Date.now();
-        const lastRequest = rateLimit.get(ip);
+    // 2. Per-IP Rate Limiting
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const now = Date.now();
+    const lastRequest = rateLimit.get(ip);
 
-        if (lastRequest && now - lastRequest < RATE_LIMIT_WINDOW) {
-            return NextResponse.json(
-                { error: "Whoa, slow down! One audit per minute." },
-                { status: 429 }
-            );
-        }
-        rateLimit.set(ip, now);
+    if (lastRequest && now - lastRequest < RATE_LIMIT_WINDOW) {
+      return NextResponse.json(
+        { error: "Whoa, slow down! One audit per minute." },
+        { status: 429 }
+      );
+    }
+    rateLimit.set(ip, now);
 
-        // Increment daily counter
-        dailyRequestCount++;
-        console.log(`[Rate Limit] Request ${dailyRequestCount}/${DAILY_LIMIT}`);
+    // Increment daily counter
+    dailyRequestCount++;
+    console.log(`[Rate Limit] Request ${dailyRequestCount}/${DAILY_LIMIT}`);
 
-        // 3. Input Validation & Sanitization
-        const { domain, description } = await req.json();
+    // 3. Input Validation & Sanitization
+    const { domain, description } = await req.json();
 
-        if (!domain || !description) {
-            return NextResponse.json(
-                { error: "Domain and description are required." },
-                { status: 400 }
-            );
-        }
+    if (!domain || !description) {
+      return NextResponse.json(
+        { error: "Domain and description are required." },
+        { status: 400 }
+      );
+    }
 
-        if (description.length > 300) {
-            return NextResponse.json(
-                { error: "Description is too long (max 300 chars)." },
-                { status: 400 }
-            );
-        }
+    if (description.length > 300) {
+      return NextResponse.json(
+        { error: "Description is too long (max 300 chars)." },
+        { status: 400 }
+      );
+    }
 
-        // Sanitize domain
-        let cleanDomain = domain.trim().toLowerCase();
-        cleanDomain = cleanDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    // Sanitize domain
+    let cleanDomain = domain.trim().toLowerCase();
+    cleanDomain = cleanDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
-        // Basic domain validation
-        if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(cleanDomain)) {
-            return NextResponse.json(
-                { error: "Invalid domain format." },
-                { status: 400 }
-            );
-        }
+    // Basic domain validation
+    if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(cleanDomain)) {
+      return NextResponse.json(
+        { error: "Invalid domain format." },
+        { status: 400 }
+      );
+    }
 
-        // 3. Fetch Site Content (Deep Scan)
-        const siteContent = await fetchSiteContent(`https://${cleanDomain}`);
+    // 3. Fetch Site Content (Deep Scan)
+    const siteContent = await fetchSiteContent(`https://${cleanDomain}`);
 
-        // 4. AI Generation
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            console.error("GEMINI_API_KEY is not set");
-            return NextResponse.json(
-                { error: "Server configuration error." },
-                { status: 500 }
-            );
-        }
+    // 4. AI Generation
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("GEMINI_API_KEY is not set");
+      return NextResponse.json(
+        { error: "Server configuration error." },
+        { status: 500 }
+      );
+    }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-        const prompt = `
+    const prompt = `
       You are the Jellymove Brain (Version 3.0).
       You are a Strategic Business Consultant, not a copywriter.
 
@@ -312,50 +312,50 @@ export async function POST(req: Request) {
       ]
     `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
 
-        if (!response.candidates || response.candidates.length === 0) {
-            console.warn("No candidates returned. Safety settings might be too strict.");
-            return NextResponse.json(
-                { error: "Defense too tight. Could not generate a play." },
-                { status: 400 }
-            );
-        }
-
-        const text = response.text().trim().replace(/```json/g, "").replace(/```/g, "");
-
-        let suggestions;
-        try {
-            suggestions = JSON.parse(text);
-        } catch (_e) {
-            console.error("Failed to parse AI response:", text, _e);
-            return NextResponse.json(
-                { error: "Fumbled the ball. Failed to parse insights." },
-                { status: 500 }
-            );
-        }
-
-        return NextResponse.json({ suggestions });
-
-    } catch (error: unknown) {
-        console.error("Audit API Error:", error);
-
-        // Detailed error logging
-        if (error && typeof error === 'object' && 'response' in error) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            console.error("Gemini API Response Error:", JSON.stringify((error as any).response, null, 2));
-        }
-
-        const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
-        const errorDetails = error instanceof Error ? error.toString() : String(error);
-
-        return NextResponse.json(
-            {
-                error: errorMessage,
-                details: errorDetails
-            },
-            { status: 500 }
-        );
+    if (!response.candidates || response.candidates.length === 0) {
+      console.warn("No candidates returned. Safety settings might be too strict.");
+      return NextResponse.json(
+        { error: "Defense too tight. Could not generate a play." },
+        { status: 400 }
+      );
     }
+
+    const text = response.text().trim().replace(/```json/g, "").replace(/```/g, "");
+
+    let suggestions;
+    try {
+      suggestions = JSON.parse(text);
+    } catch (_e) {
+      console.error("Failed to parse AI response:", text, _e);
+      return NextResponse.json(
+        { error: "Fumbled the ball. Failed to parse insights." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ suggestions });
+
+  } catch (error: unknown) {
+    console.error("Audit API Error:", error);
+
+    // Detailed error logging
+    if (error && typeof error === 'object' && 'response' in error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.error("Gemini API Response Error:", JSON.stringify((error as any).response, null, 2));
+    }
+
+    const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
+    const errorDetails = error instanceof Error ? error.toString() : String(error);
+
+    return NextResponse.json(
+      {
+        error: errorMessage,
+        details: errorDetails
+      },
+      { status: 500 }
+    );
+  }
 }

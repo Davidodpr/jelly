@@ -32,8 +32,9 @@ export default function AuditSection() {
             });
 
             if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
                 if (res.status === 429) throw new Error("Whoa, slow down! One audit per minute.");
-                throw new Error("Something went wrong. Try again.");
+                throw new Error(errorData.error || "Something went wrong. Try again.");
             }
 
             const data = await res.json();
@@ -86,10 +87,10 @@ export default function AuditSection() {
                         {/* Glossy sheen */}
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-                        <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+                        <form onSubmit={handleSubmit} className="space-y-6 relative z-10" noValidate>
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-[#00f5ff] tracking-widest uppercase">Your Court</label>
+                                    <label htmlFor="domain" className="text-sm font-bold text-[#00f5ff] tracking-widest uppercase">Your Court</label>
                                     <div className="flex">
                                         <span className="bg-black/60 border border-white/10 border-r-0 rounded-l-xl px-4 py-4 text-white/40 text-sm flex items-center">https://</span>
                                         <input
@@ -99,6 +100,8 @@ export default function AuditSection() {
                                             autoComplete="url"
                                             placeholder="yourbusiness.com"
                                             required
+                                            spellCheck="false"
+                                            data-lpignore="true"
                                             value={domain}
                                             onChange={(e) => setDomain(e.target.value)}
                                             className="w-full bg-black/40 border border-white/10 rounded-r-xl p-4 text-white placeholder:text-white/20 focus:outline-none focus:border-[#00f5ff] transition-colors"
@@ -113,6 +116,7 @@ export default function AuditSection() {
                                         name="email"
                                         autoComplete="email"
                                         placeholder="you@yourbusiness.com"
+                                        data-lpignore="true"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white placeholder:text-white/20 focus:outline-none focus:border-[#ffbe0b] transition-colors"
@@ -128,6 +132,7 @@ export default function AuditSection() {
                                     placeholder="e.g. Leads go cold before we can close..."
                                     required
                                     maxLength={280}
+                                    data-lpignore="true"
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white placeholder:text-white/20 focus:outline-none focus:border-[#ff006e] transition-colors h-32 resize-none"
