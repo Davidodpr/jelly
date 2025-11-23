@@ -106,7 +106,7 @@ const Hero = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.1 + (i * 0.1) }}
-              whileHover={{ scale: 1.1, rotate: Math.random() * 4 - 2 }}
+              whileHover={{ scale: 1.1, rotate: (i % 2 === 0 ? 2 : -2) }}
               className="rounded-full border border-white/10 bg-white/5 px-3 py-1 cursor-default"
             >
               {text}

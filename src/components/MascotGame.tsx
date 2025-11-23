@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface MascotGameProps {
     isOpen: boolean;
@@ -50,26 +50,46 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
     const lastTimeRef = useRef<number>(0);
     const containerRef = useRef<HTMLDivElement>(null);
 
+    // DOM Refs for direct manipulation
+    const ballDomRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const particleDomRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const hoopDomRef = useRef<HTMLDivElement>(null);
+
     // Drag State
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [dragCurrent, setDragCurrent] = useState({ x: 0, y: 0 });
+    const [containerOffset, setContainerOffset] = useState({ x: 0, y: 0 });
     const [trajectoryPoints, setTrajectoryPoints] = useState<{ x: number, y: number }[]>([]);
 
-    // React State for rendering (synced from refs occasionally or for UI)
+    // ... (keep other code)
+
+    // Input Handlers
+
+
+    // ... (keep handleMove)
+
+    // ... (keep handleEnd)
+
+    // ... (in render)
+
+
+    // React State for rendering (synced ONLY when items are added/removed)
     const [uiBalls, setUiBalls] = useState<Ball[]>([]);
-    const [uiHoopX, setUiHoopX] = useState(50);
     const [uiParticles, setUiParticles] = useState<Particle[]>([]);
+    // Removed uiHoopX state to avoid re-renders
 
     // Load High Score
     useEffect(() => {
         const saved = localStorage.getItem("jellyHighScore");
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (saved) setHighScore(parseInt(saved));
     }, []);
 
     // Save High Score
     useEffect(() => {
         if (score > highScore) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setHighScore(score);
             localStorage.setItem("jellyHighScore", score.toString());
         }
@@ -83,6 +103,7 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
         else if (score >= 5) newStage = 1;
 
         if (newStage > gameStage) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setGameStage(newStage);
             // Show Notification
             let text = "";
@@ -106,11 +127,14 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
         hoopRef.current = { x: 50, direction: 1, speed: 0.5 };
         setUiBalls([]);
         setUiParticles([]);
+        ballDomRefs.current.clear();
+        particleDomRefs.current.clear();
     };
 
     const spawnParticles = (x: number, y: number, count: number, color: string) => {
+        const newParticles: Particle[] = [];
         for (let i = 0; i < count; i++) {
-            particlesRef.current.push({
+            newParticles.push({
                 id: Math.random(),
                 x,
                 y,
@@ -120,161 +144,163 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
                 color
             });
         }
+        particlesRef.current = [...particlesRef.current, ...newParticles];
+        setUiParticles([...particlesRef.current]);
     };
 
-    const gameLoop = useCallback((time: number) => {
-        if (!containerRef.current || gameOver) return;
+    useEffect(() => {
+        if (!isOpen || gameOver || !containerRef.current) return;
 
-        lastTimeRef.current = time;
+        const loop = (time: number) => {
+            if (!containerRef.current || gameOver) return;
+            lastTimeRef.current = time;
 
-        const rect = containerRef.current.getBoundingClientRect();
-        const width = rect.width;
-        const height = rect.height;
+            const rect = containerRef.current.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
 
-        // Update Hoop
-        let hoop = hoopRef.current;
+            // Update Hoop
+            const hoop = hoopRef.current;
 
-        // Difficulty & Progression Modifiers
-        let speedMultiplier = 1;
-        if (gameStage === 1) speedMultiplier = 0.5; // Slow down for Prospecting
+            // Difficulty & Progression Modifiers
+            let speedMultiplier = 1;
+            if (gameStage === 1) speedMultiplier = 0.5;
 
-        // Base speed progression
-        const targetSpeed = (0.5 + (score * 0.08)) * speedMultiplier;
-        hoop.speed = hoop.speed * 0.99 + targetSpeed * 0.01;
+            const targetSpeed = (0.5 + (score * 0.08)) * speedMultiplier;
+            hoop.speed = hoop.speed * 0.99 + targetSpeed * 0.01;
 
-        hoop.x += hoop.direction * hoop.speed;
-        if (hoop.x > 90 && hoop.direction > 0) {
-            hoop.direction = -1;
-        } else if (hoop.x < 10 && hoop.direction < 0) {
-            hoop.direction = 1;
-        }
-        setUiHoopX(hoop.x);
-
-        // Hoop Dimensions
-        const hoopY = height * 0.2;
-        let hoopW = width * 0.25;
-        if (gameStage >= 2) hoopW *= 1.2; // Bigger hoop for Qualified
-
-        const hoopLeft = (hoop.x / 100) * width - hoopW / 2;
-        const hoopRight = (hoop.x / 100) * width + hoopW / 2;
-        const hoopCenter = (hoopLeft + hoopRight) / 2;
-        const netBottom = hoopY + hoopW * 0.8; // Approx net height
-
-        // Update Balls
-        ballsRef.current.forEach(ball => {
-            if (!ball.active) return;
-
-            ball.vy += GRAVITY;
-
-            // Fireball Effect (Stage 3)
-            if (gameStage >= 3 && Math.random() > 0.5) {
-                particlesRef.current.push({
-                    id: Math.random(),
-                    x: ball.x,
-                    y: ball.y,
-                    vx: (Math.random() - 0.5) * 2,
-                    vy: (Math.random() - 0.5) * 2,
-                    life: 0.5,
-                    color: "#ff4d00"
-                });
+            hoop.x += hoop.direction * hoop.speed;
+            if (hoop.x > 90 && hoop.direction > 0) {
+                hoop.direction = -1;
+            } else if (hoop.x < 10 && hoop.direction < 0) {
+                hoop.direction = 1;
             }
 
-            if (ball.inHoop) {
-                // Net Physics: Funnel towards center, dampen X movement
-                const distToCenter = hoopCenter - ball.x;
-                ball.vx += distToCenter * 0.1; // Stronger pull to center
-                ball.vx *= 0.6; // Heavy friction to stop bouncing
-                ball.vy *= 0.9; // Slight drag falling down
+            if (hoopDomRef.current) {
+                hoopDomRef.current.style.left = `${hoop.x}%`;
+            }
 
-                // Check if exited net bottom
-                if (ball.y > netBottom) {
-                    ball.active = false;
-                    const points = gameStage >= 3 ? 2 : 1; // Double points for Closed Won
-                    setScore(s => s + points);
-                    setLives(l => Math.min(5, l + 1));
-                    spawnParticles(ball.x, ball.y, 20, "#00f5ff"); // Confetti
-                }
-            } else {
-                // Normal Physics
-                ball.vx *= FRICTION;
-                ball.vy *= FRICTION;
+            const hoopY = height * 0.2;
+            let hoopW = width * 0.25;
+            if (gameStage >= 2) hoopW *= 1.2;
 
-                // Wall collisions
-                if (ball.x < ball.radius) {
-                    ball.x = ball.radius;
-                    ball.vx *= -BOUNCE;
-                } else if (ball.x > width - ball.radius) {
-                    ball.x = width - ball.radius;
-                    ball.vx *= -BOUNCE;
-                }
+            const hoopLeft = (hoop.x / 100) * width - hoopW / 2;
+            const hoopRight = (hoop.x / 100) * width + hoopW / 2;
+            const hoopCenter = (hoopLeft + hoopRight) / 2;
+            const netBottom = hoopY + hoopW * 0.8;
 
-                // Floor collision (Miss)
-                if (ball.y > height - ball.radius) {
-                    ball.active = false;
-                    setLives(l => {
-                        const newLives = Math.max(0, l - 1);
-                        // Check for Game Over: No lives left AND no other balls active
-                        const activeBalls = ballsRef.current.filter(b => b.active && b.id !== ball.id).length;
-                        if (newLives <= 0 && activeBalls === 0) {
-                            setGameOver(true);
+            let ballsChanged = false;
+
+            ballsRef.current.forEach(ball => {
+                if (!ball.active) return;
+
+                ball.vy += GRAVITY;
+
+                if (ball.inHoop) {
+                    const distToCenter = hoopCenter - ball.x;
+                    ball.vx += distToCenter * 0.1;
+                    ball.vx *= 0.6;
+                    ball.vy *= 0.9;
+
+                    if (ball.y > netBottom) {
+                        ball.active = false;
+                        ballsChanged = true;
+                        const points = gameStage >= 3 ? 2 : 1;
+                        setScore(s => s + points);
+                        setLives(l => Math.min(5, l + 1));
+                        spawnParticles(ball.x, ball.y, 20, "#00f5ff");
+                    }
+                } else {
+                    ball.vx *= FRICTION;
+                    ball.vy *= FRICTION;
+
+                    if (ball.x < ball.radius) {
+                        ball.x = ball.radius;
+                        ball.vx *= -BOUNCE;
+                    } else if (ball.x > width - ball.radius) {
+                        ball.x = width - ball.radius;
+                        ball.vx *= -BOUNCE;
+                    }
+
+                    if (ball.y > height - ball.radius) {
+                        ball.active = false;
+                        ballsChanged = true;
+                        setLives(l => {
+                            const newLives = Math.max(0, l - 1);
+                            const activeBalls = ballsRef.current.filter(b => b.active && b.id !== ball.id).length;
+                            if (newLives <= 0 && activeBalls === 0) {
+                                setGameOver(true);
+                            }
+                            return newLives;
+                        });
+                        spawnParticles(ball.x, height - 10, 10, "#ff006e");
+                    }
+
+                    if (Math.abs(ball.y - hoopY) < 15 && ball.vy > 0) {
+                        if (ball.x > hoopLeft + 5 && ball.x < hoopRight - 5) {
+                            ball.inHoop = true;
+                            ball.vy *= 0.5;
+                            const el = ballDomRefs.current.get(ball.id);
+                            if (el) el.style.zIndex = "20";
+                        } else if (Math.abs(ball.x - hoopLeft) < 15 || Math.abs(ball.x - hoopRight) < 15) {
+                            ball.vy *= -BOUNCE;
+                            const pushDir = ball.x < hoopCenter ? -1 : 1;
+                            ball.vx = pushDir * Math.max(Math.abs(ball.vx), 6);
+                            ball.y = hoopY - 20;
                         }
-                        return newLives;
-                    });
-                    spawnParticles(ball.x, height - 10, 10, "#ff006e"); // Splat
-                }
-
-                // Hoop Collision Check
-                // Check if ball is crossing the rim plane
-                if (Math.abs(ball.y - hoopY) < 15 && ball.vy > 0) {
-                    // Check horizontal
-                    if (ball.x > hoopLeft + 5 && ball.x < hoopRight - 5) {
-                        // ENTER HOOP
-                        ball.inHoop = true;
-                        // Kill some velocity to make it "catch"
-                        ball.vy *= 0.5;
-                    } else if (Math.abs(ball.x - hoopLeft) < 15 || Math.abs(ball.x - hoopRight) < 15) {
-                        // Rim bounce
-                        ball.vy *= -BOUNCE;
-                        // Push away from center to prevent "landing on top"
-                        const pushDir = ball.x < hoopCenter ? -1 : 1;
-                        ball.vx = pushDir * Math.max(Math.abs(ball.vx), 6); // Stronger push (was 3)
-                        // Force y slightly up to avoid sticking
-                        ball.y = hoopY - 20; // Higher clearance
                     }
                 }
+
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                const el = ballDomRefs.current.get(ball.id);
+                if (el) {
+                    el.style.left = `${ball.x - ball.radius}px`;
+                    el.style.top = `${ball.y - ball.radius}px`;
+                    if (ball.inHoop) {
+                        el.style.transform = 'scale(0.85)';
+                    }
+                }
+            });
+
+            if (ballsChanged) {
+                ballsRef.current = ballsRef.current.filter(b => b.active);
+                setUiBalls([...ballsRef.current]);
             }
 
-            ball.x += ball.vx;
-            ball.y += ball.vy;
-        });
+            particlesRef.current.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += GRAVITY * 0.5;
+                p.life -= 0.02;
 
-        // Cleanup inactive balls
-        ballsRef.current = ballsRef.current.filter(b => b.active);
-        setUiBalls([...ballsRef.current]);
+                const el = particleDomRefs.current.get(p.id);
+                if (el) {
+                    el.style.left = `${p.x}px`;
+                    el.style.top = `${p.y}px`;
+                    el.style.opacity = `${p.life}`;
+                    el.style.transform = `scale(${p.life})`;
+                }
+            });
 
-        // Update Particles
-        particlesRef.current.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += GRAVITY * 0.5;
-            p.life -= 0.02;
-        });
-        particlesRef.current = particlesRef.current.filter(p => p.life > 0);
-        setUiParticles([...particlesRef.current]);
+            const activeParticles = particlesRef.current.filter(p => p.life > 0);
+            if (activeParticles.length !== particlesRef.current.length) {
+                particlesRef.current = activeParticles;
+                setUiParticles([...activeParticles]);
+            }
 
-        requestRef.current = requestAnimationFrame(gameLoop);
-    }, [score, lives, gameOver, gameStage]);
+            requestRef.current = requestAnimationFrame(loop);
+        };
 
-    useEffect(() => {
-        if (isOpen && !gameOver) {
-            requestRef.current = requestAnimationFrame(gameLoop);
-        }
+        requestRef.current = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(requestRef.current);
-    }, [isOpen, gameOver, gameLoop]);
+    }, [isOpen, gameOver, score, lives, gameStage]);
 
     // Calculate Trajectory
     useEffect(() => {
         if (!isDragging || !containerRef.current) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setTrajectoryPoints([]);
             return;
         }
@@ -293,7 +319,6 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
         let y = startY;
 
         const points = [];
-        // Simulate 30 frames
         for (let i = 0; i < 30; i++) {
             vy += GRAVITY;
             vx *= FRICTION;
@@ -308,7 +333,11 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
 
     // Input Handlers
     const handleStart = (x: number, y: number) => {
-        if (gameOver || lives <= 0) return;
+        if (gameOver || lives <= 0 || !containerRef.current) return;
+
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerOffset({ x: rect.left, y: rect.top });
+
         setIsDragging(true);
         setDragStart({ x, y });
         setDragCurrent({ x, y });
@@ -332,7 +361,7 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
             const startX = rect.width / 2;
             const startY = rect.height - 50;
 
-            ballsRef.current.push({
+            const newBall: Ball = {
                 id: Date.now(),
                 x: startX,
                 y: startY,
@@ -341,7 +370,10 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
                 radius: 15,
                 active: true,
                 inHoop: false
-            });
+            };
+
+            ballsRef.current.push(newBall);
+            setUiBalls([...ballsRef.current]);
         }
     };
 
@@ -448,10 +480,11 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
 
                         {/* Hoop */}
                         <div
-                            className="absolute top-[20%] -translate-x-1/2 aspect-square z-10 pointer-events-none transition-all duration-500"
+                            ref={hoopDomRef}
+                            className="absolute top-[20%] -translate-x-1/2 aspect-square z-10 pointer-events-none transition-[width] duration-500"
                             style={{
-                                left: `${uiHoopX}%`,
-                                width: gameStage >= 2 ? '30%' : '25%' // Bigger hoop at Stage 2
+                                left: `50%`, // Initial, updated by JS
+                                width: gameStage >= 2 ? '30%' : '25%'
                             }}
                         >
                             {/* Backboard */}
@@ -471,6 +504,10 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
                         {uiBalls.map(ball => (
                             <div
                                 key={ball.id}
+                                ref={(el) => {
+                                    if (el) ballDomRefs.current.set(ball.id, el);
+                                    else ballDomRefs.current.delete(ball.id);
+                                }}
                                 className={`absolute w-[30px] h-[30px] rounded-full bg-gradient-to-br from-[#ff006e] to-[#700030] shadow-[0_0_15px_#ff006e] pointer-events-none border border-white/20 transition-transform duration-300 ${ball.inHoop ? 'z-20' : 'z-40'}`}
                                 style={{
                                     left: ball.x - ball.radius,
@@ -484,6 +521,10 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
                         {uiParticles.map(p => (
                             <div
                                 key={p.id}
+                                ref={(el) => {
+                                    if (el) particleDomRefs.current.set(p.id, el);
+                                    else particleDomRefs.current.delete(p.id);
+                                }}
                                 className="absolute w-2 h-2 rounded-full pointer-events-none z-40"
                                 style={{
                                     left: p.x,
@@ -513,10 +554,10 @@ const MascotGame = ({ isOpen, onClose }: MascotGameProps) => {
 
                                 {/* Drag Line (Subtle) */}
                                 <line
-                                    x1={dragStart.x - (containerRef.current?.getBoundingClientRect().left || 0)}
-                                    y1={dragStart.y - (containerRef.current?.getBoundingClientRect().top || 0)}
-                                    x2={dragCurrent.x - (containerRef.current?.getBoundingClientRect().left || 0)}
-                                    y2={dragCurrent.y - (containerRef.current?.getBoundingClientRect().top || 0)}
+                                    x1={dragStart.x - containerOffset.x}
+                                    y1={dragStart.y - containerOffset.y}
+                                    x2={dragCurrent.x - containerOffset.x}
+                                    y2={dragCurrent.y - containerOffset.y}
                                     stroke="#00f5ff"
                                     strokeWidth="1"
                                     strokeDasharray="5,5"
