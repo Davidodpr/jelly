@@ -272,16 +272,16 @@ export async function POST(req: Request) {
       You are a Strategic Business Consultant, not a copywriter.
 
       YOUR GOAL:
-      Transform the user's business by applying "The 5 Lenses".
-      You must be bold, specific, and strategic.
-      Do not give generic advice. Do not focus on website colors or buttons unless it kills conversion.
-      Focus on: Business Model, Partnerships, Pricing, and Friction.
+      1. Analyze the user's business.
+      2. Generate 3 strategic plays using "The 5 Lenses".
+      3. SCORE the business potential (0-100) based on how much impact Jellymove could have.
+      4. Write a short "Verdict" explaining the score.
 
       THE 5 LENSES:
-      1. SUBTRACT (✂️) - What can they stop doing? (Unprofitable customers, time-wasting processes, bad channels)
-      2. ACCESS (🤝) - Who do they already have access to? (Upsell/cross-sell, partners/OPP, other interfaces)
-      3. PRICE (💰) - Can they raise prices or extend contracts? (Monthly -> Yearly = better cash flow)
-      4. FRICTION (🚪) - What is hard that should be easy? (Onboarding, sales cycle)
+      1. SUBTRACT (✂️) - What can they stop doing?
+      2. ACCESS (🤝) - Who do they already have access to?
+      3. PRICE (💰) - Can they raise prices or extend contracts?
+      4. FRICTION (🚪) - What is hard that should be easy?
       5. AUTOMATE (🤖) - What repetitive tasks can be automated?
 
       TRAINING EXAMPLES (FEW-SHOT):
@@ -293,23 +293,27 @@ export async function POST(req: Request) {
       Website Context (Deep Scan): "${siteContent || "Could not read site, rely on domain and challenge."}"
 
       THINKING PROCESS (Chain-of-Thought):
-      1. Analyze the Business Model from the context.
-      2. Identify the biggest leak or missed opportunity using the 5 Lenses.
+      1. Analyze the Business Model.
+      2. Identify the biggest leak or missed opportunity.
       3. Draft 3 specific plays.
-      4. Refine titles to be "Jellymove Style" (Punchy, metaphoric).
-      5. Ensure "Action" is a concrete 15-minute task.
+      4. Determine the "Jelly-Score" (0-100). High score = High potential for rapid growth/transformation.
+      5. Write a 1-sentence Verdict.
 
       OUTPUT FORMAT:
-      Strictly a JSON array of objects. No markdown.
-      [
-        {
-          "icon": "emoji",
-          "title": "Short hook (max 5 words)",
-          "description": "The Insight - what they are missing/doing wrong (max 25 words)",
-          "action": "First concrete step (max 15 words)"
-        },
-        ...
-      ]
+      Strictly a JSON object. No markdown.
+      {
+        "suggestions": [
+          {
+            "icon": "emoji",
+            "title": "Short hook (max 5 words)",
+            "description": "The Insight (max 25 words)",
+            "action": "First concrete step (max 15 words)"
+          },
+          ...
+        ],
+        "score": 85,
+        "verdict": "You are sitting on a goldmine but digging with a spoon."
+      }
     `;
 
     const result = await model.generateContent(prompt);
@@ -325,9 +329,9 @@ export async function POST(req: Request) {
 
     const text = response.text().trim().replace(/```json/g, "").replace(/```/g, "");
 
-    let suggestions;
+    let data;
     try {
-      suggestions = JSON.parse(text);
+      data = JSON.parse(text);
     } catch (_e) {
       console.error("Failed to parse AI response:", text, _e);
       return NextResponse.json(
@@ -336,7 +340,7 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ suggestions });
+    return NextResponse.json(data);
 
   } catch (error: unknown) {
     console.error("Audit API Error:", error);
