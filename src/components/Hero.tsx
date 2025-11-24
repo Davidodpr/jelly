@@ -86,10 +86,10 @@ const Hero = () => {
             className="mt-8"
           >
             <JellyButton
-              href="#contact"
+              href="#audit-section"
               className="rounded-full bg-[#ff006e] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[#ff006e]/30 transition hover:bg-[#00f5ff] hover:text-gray-900 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#00f5ff]"
             >
-              Let&apos;s talk
+              Get Audited
             </JellyButton>
           </motion.div>
         </motion.div>

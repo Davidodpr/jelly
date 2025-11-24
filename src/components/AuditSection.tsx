@@ -21,6 +21,38 @@ export default function AuditSection() {
     const [verdict, setVerdict] = useState("");
     const [showEmailForm, setShowEmailForm] = useState(false);
 
+    const [email, setEmail] = useState("");
+    const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+
+    const handleEmailSubmit = async (e: React.FormEvent, type: 'application' | 'waitlist') => {
+        e.preventDefault();
+        setEmailStatus("sending");
+
+        try {
+            const res = await fetch("/api/capture-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email,
+                    domain,
+                    score,
+                    type,
+                    suggestions, // Pass the plays
+                    verdict      // Pass the verdict
+                }),
+            });
+
+            if (res.ok) {
+                setEmailStatus("success");
+                setEmail("");
+            } else {
+                setEmailStatus("error");
+            }
+        } catch {
+            setEmailStatus("error");
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -63,7 +95,7 @@ export default function AuditSection() {
     };
 
     return (
-        <section className="relative py-32 px-4 overflow-hidden bg-[#050110]">
+        <section id="audit-section" className="relative py-32 px-4 overflow-hidden bg-[#050110]">
             {/* Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
                 <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-[#00f5ff]/5 rounded-full blur-[100px]" />
@@ -163,7 +195,7 @@ export default function AuditSection() {
                                     {loading ? (
                                         <span className="flex items-center gap-2">
                                             <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                                            READING THE DEFENSE...
+                                            ANALYZING SITE STRUCTURE...
                                         </span>
                                     ) : (
                                         <span className="flex items-center gap-2">
@@ -248,40 +280,64 @@ export default function AuditSection() {
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 className="max-w-md mx-auto bg-black/40 rounded-2xl p-6 border border-white/10"
                                             >
-                                                {score >= 80 ? (
-                                                    <div className="space-y-4">
-                                                        <div className="text-[#00f5ff] font-bold uppercase tracking-widest text-sm">🦄 Unicorn Potential Detected</div>
-                                                        <p className="text-white/80 text-sm">
-                                                            You qualify for a strategic partnership. We have <span className="text-white font-bold">3 spots</span> left for 2025.
-                                                        </p>
-                                                        <div className="flex gap-2">
-                                                            <input
-                                                                type="email"
-                                                                placeholder="ceo@yourcompany.com"
-                                                                className="flex-1 bg-white/10 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-[#00f5ff]"
-                                                            />
-                                                            <button className="bg-[#00f5ff] text-black font-bold px-6 py-3 rounded-lg hover:bg-[#00f5ff]/90 transition-colors">
-                                                                APPLY
-                                                            </button>
-                                                        </div>
+                                                {emailStatus === "success" ? (
+                                                    <div className="text-center py-4">
+                                                        <div className="text-4xl mb-2">📨</div>
+                                                        <h4 className="text-white font-bold text-lg mb-1">Check your inbox!</h4>
+                                                        <p className="text-white/60 text-sm">We&apos;ll be in touch shortly.</p>
                                                     </div>
                                                 ) : (
-                                                    <div className="space-y-4">
-                                                        <div className="text-[#ffbe0b] font-bold uppercase tracking-widest text-sm">🚧 Work in Progress</div>
-                                                        <p className="text-white/80 text-sm">
-                                                            You&apos;re not ready for us yet. Join the waitlist to get our &quot;Golden Playbook&quot; and improve your score.
-                                                        </p>
-                                                        <div className="flex gap-2">
-                                                            <input
-                                                                type="email"
-                                                                placeholder="you@yourcompany.com"
-                                                                className="flex-1 bg-white/10 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-[#ffbe0b]"
-                                                            />
-                                                            <button className="bg-white/10 text-white font-bold px-6 py-3 rounded-lg hover:bg-white/20 transition-colors">
-                                                                JOIN
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                    <>
+                                                        {score >= 80 ? (
+                                                            <div className="space-y-4">
+                                                                <div className="text-[#00f5ff] font-bold uppercase tracking-widest text-sm">🦄 Unicorn Potential Detected</div>
+                                                                <p className="text-white/80 text-sm">
+                                                                    You qualify for a strategic partnership. We have <span className="text-white font-bold">3 spots</span> left for 2025.
+                                                                </p>
+                                                                <form onSubmit={(e) => handleEmailSubmit(e, 'application')} className="flex gap-2">
+                                                                    <input
+                                                                        type="email"
+                                                                        required
+                                                                        placeholder="ceo@yourcompany.com"
+                                                                        value={email}
+                                                                        onChange={(e) => setEmail(e.target.value)}
+                                                                        className="flex-1 bg-white/10 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-[#00f5ff]"
+                                                                    />
+                                                                    <button
+                                                                        type="submit"
+                                                                        disabled={emailStatus === "sending"}
+                                                                        className="bg-[#00f5ff] text-black font-bold px-6 py-3 rounded-lg hover:bg-[#00f5ff]/90 transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        {emailStatus === "sending" ? "..." : "APPLY"}
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="space-y-4">
+                                                                <div className="text-[#ffbe0b] font-bold uppercase tracking-widest text-sm">🚧 Work in Progress</div>
+                                                                <p className="text-white/80 text-sm">
+                                                                    You&apos;re not ready for us yet. Join the waitlist to get our &quot;Golden Playbook&quot; and improve your score.
+                                                                </p>
+                                                                <form onSubmit={(e) => handleEmailSubmit(e, 'waitlist')} className="flex gap-2">
+                                                                    <input
+                                                                        type="email"
+                                                                        required
+                                                                        placeholder="you@yourcompany.com"
+                                                                        value={email}
+                                                                        onChange={(e) => setEmail(e.target.value)}
+                                                                        className="flex-1 bg-white/10 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-[#ffbe0b]"
+                                                                    />
+                                                                    <button
+                                                                        type="submit"
+                                                                        disabled={emailStatus === "sending"}
+                                                                        className="bg-white/10 text-white font-bold px-6 py-3 rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        {emailStatus === "sending" ? "..." : "JOIN"}
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        )}
+                                                    </>
                                                 )}
                                             </motion.div>
                                         )}

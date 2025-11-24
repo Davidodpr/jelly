@@ -31,6 +31,11 @@ const Header = () => {
               </a>
             </li>
             <li>
+              <a href="#audit-section" className="text-[#00f5ff] hover:text-[#00f5ff]/80 font-bold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#00f5ff] focus:ring-offset-2 focus:ring-offset-[#0d0221] rounded px-2 py-1">
+                Free Audit
+              </a>
+            </li>
+            <li>
               <a
                 href="mailto:hi@jellymove.com"
                 className="rounded-full border border-[#ff006e]/40 px-4 py-2 text-white hover:border-[#00f5ff] hover:shadow-[#00f5ff]/20 hover:shadow-lg transition focus:outline-none focus:ring-2 focus:ring-[#00f5ff] focus:ring-offset-2 focus:ring-offset-[#0d0221]"
@@ -87,6 +92,15 @@ const Header = () => {
                 className="block text-white/80 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#00f5ff] rounded px-2 py-2"
               >
                 Contact
+              </a>
+            </li>
+            <li>
+              <a
+                href="#audit-section"
+                onClick={() => setIsOpen(false)}
+                className="block text-[#00f5ff] font-bold hover:text-[#00f5ff]/80 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#00f5ff] rounded px-2 py-2"
+              >
+                Free Audit
               </a>
             </li>
             <li>

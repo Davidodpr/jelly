@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-// Simple in-memory rate limiter with cleanup
+// Simple in-memory rate limiter with lazy cleanup
 const rateLimit = new Map<string, number>();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 
@@ -19,22 +19,23 @@ function checkAndResetDaily() {
   }
 }
 
-// Cleanup old rate limit entries every minute
-setInterval(() => {
+// Lazy cleanup: Run cleanup with 10% probability on each request
+function lazyCleanup() {
+  if (Math.random() > 0.1) return;
+
   const now = Date.now();
   for (const [ip, time] of rateLimit.entries()) {
     if (now - time > RATE_LIMIT_WINDOW) {
       rateLimit.delete(ip);
     }
   }
-  checkAndResetDaily();
-}, RATE_LIMIT_WINDOW);
+}
 
 // Helper to fetch and clean site content
 async function fetchSiteContent(url: string): Promise<string> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout for deep scan
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
     const res = await fetch(url, {
       signal: controller.signal,
@@ -48,7 +49,28 @@ async function fetchSiteContent(url: string): Promise<string> {
 
     const html = await res.text();
 
-    // Basic cleanup
+    // Extract links before cleaning
+    const linkRegex = /<a\s+(?:[^>]*?\s+)?href="([^"]*)"[^>]*>(.*?)<\/a>/gi;
+    const links: { href: string; text: string }[] = [];
+    let match;
+
+    while ((match = linkRegex.exec(html)) !== null) {
+      links.push({ href: match[1], text: match[2].replace(/<[^>]+>/g, "").trim() });
+    }
+
+    // Find the most relevant sub-page (Pricing > Services > About)
+    const keywords = ["pricing", "pris", "tjänster", "services", "about", "om oss"];
+    let bestLink = "";
+
+    for (const keyword of keywords) {
+      const found = links.find(l => l.href && (l.href.toLowerCase().includes(keyword) || l.text.toLowerCase().includes(keyword)));
+      if (found) {
+        bestLink = found.href;
+        break;
+      }
+    }
+
+    // Basic cleanup of main page
     const text = html
       .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gmi, "")
       .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gmi, "")
@@ -56,28 +78,26 @@ async function fetchSiteContent(url: string): Promise<string> {
       .replace(/\s+/g, " ")
       .trim();
 
-    // DEEP SCAN: Try to find and fetch pricing/about pages if linked
-    // This is a simplified version. In a real deep scan, we'd parse the HTML properly.
-    // Here we just guess common paths if we see them in the text/links (simplified).
-    // Actually, let's just try to fetch /pricing and /about blindly if the homepage fetch worked.
-    // It's faster than parsing.
-
-    const baseUrl = url.replace(/\/$/, "");
-    // const subPages = ["/pricing", "/about", "/tjanster", "/services"]; // Unused
     let extraContent = "";
 
-    // We'll try to fetch at least one sub-page if it exists
-    // To save time/bandwidth, we race them or just pick the most likely one.
-    // Let's try /pricing first as it's most valuable for "Price" lens.
-
-    try {
-      const pricingRes = await fetch(`${baseUrl}/pricing`, { signal: AbortSignal.timeout(3000) });
-      if (pricingRes.ok) {
-        const pricingHtml = await pricingRes.text();
-        extraContent += "\n\n--- PRICING PAGE ---\n" + pricingHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 5000);
+    // Fetch sub-page if found
+    if (bestLink) {
+      // Handle relative URLs
+      if (!bestLink.startsWith("http")) {
+        const baseUrl = url.replace(/\/$/, "");
+        bestLink = bestLink.startsWith("/") ? `${baseUrl}${bestLink}` : `${baseUrl}/${bestLink}`;
       }
-    } catch {
-      // Ignore pricing fetch error
+
+      try {
+        console.log(`[Deep Scan] Fetching sub-page: ${bestLink}`);
+        const subRes = await fetch(bestLink, { signal: AbortSignal.timeout(3000) });
+        if (subRes.ok) {
+          const subHtml = await subRes.text();
+          extraContent += `\n\n--- LINKED PAGE (${bestLink}) ---\n` + subHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 5000);
+        }
+      } catch (e) {
+        console.warn(`[Deep Scan] Failed to fetch sub-page ${bestLink}:`, e);
+      }
     }
 
     return (text.slice(0, 15000) + extraContent).slice(0, 20000);
