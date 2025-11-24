@@ -132,7 +132,9 @@ Output:
     "description": "Byggare har egna cashflow-problem. Du hjälper inte genom att fakturera månadsvis - och du får inget kapital att växa med.",
     "action": "Byt till årsfaktura med 2 månader gratis. Du får in cash direkt, de får en deal. Win-win."
   }
-]
+],
+"score": 88,
+"verdict": "You have a killer product but you are selling it to the wrong people."
 
 EXAMPLE 2:
 Domain: solenergi-syd.se
@@ -158,7 +160,9 @@ Output:
     "description": "Du betalar dyrt per lead för att tävla mot 4 andra på pris. Loppet är riggat mot dig från start.",
     "action": "Halvera budget på jämförelsesajter. Lägg på referral-bonus till kunder som tipsar grannar. Varmaste leadsen, noll priskonkurrens."
   }
-]
+],
+"score": 72,
+"verdict": "You are fighting a losing battle on price instead of building a brand."
 
 EXAMPLE 3:
 Domain: strategikonsult.se
@@ -184,7 +188,9 @@ Output:
     "description": "Varje intro-möte tar en timme. Majoriteten är fel fit. Du blöder tid på folk som aldrig kommer köpa.",
     "action": "Spela in en video som förklarar hur ni jobbar och ungefärlig prisrange. Skicka innan möte. De som bokar är seriösa."
   }
-]
+],
+"score": 64,
+"verdict": "Your sales process is designed to repel customers, not attract them."
 
 EXAMPLE 4:
 Domain: kaffeprenumeration.se
@@ -210,7 +216,9 @@ Output:
     "description": "Ingen binding betyder att ingen vana hinner bildas. De avbryter innan de blivit kära i ditt kaffe.",
     "action": "Erbjud en 'smakresa' över flera månader med tema varje leverans. Kunden committar längre, du får högre LTV."
   }
-]
+],
+"score": 94,
+"verdict": "You have a recurring revenue goldmine but you are digging in the wrong spot."
 `;
 
 export async function POST(req: Request) {
@@ -303,6 +311,14 @@ export async function POST(req: Request) {
       3. PRICE (💰) - Can they raise prices or extend contracts?
       4. FRICTION (🚪) - What is hard that should be easy?
       5. AUTOMATE (🤖) - What repetitive tasks can be automated?
+
+      SCORING GUIDELINES:
+      - Use the FULL range (0-100). Do not default to 70-80.
+      - < 70: Low potential, bad fit, or too early.
+      - 70-79: Average business, incremental improvements possible.
+      - 80-89: High potential, "Unicorn" material if they fix 1-2 things.
+      - 90+: Absolute goldmine, immediate exponential growth possible.
+      - BE CRITICAL. Most businesses are NOT 80+.
 
       TRAINING EXAMPLES (FEW-SHOT):
       ${FEW_SHOT_EXAMPLES}

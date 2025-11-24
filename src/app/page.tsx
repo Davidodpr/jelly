@@ -7,7 +7,7 @@ import AuditSection from "@/components/AuditSection";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#050110] text-white overflow-x-hidden">
+    <main className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
       <Hero />
       <AuditSection />
       <Services />

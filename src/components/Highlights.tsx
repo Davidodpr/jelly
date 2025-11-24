@@ -29,47 +29,47 @@ const cases = [
 
 const Highlights = () => {
   return (
-    <section id="highlights" className="py-20 md:py-28">
+    <section id="highlights" className="py-20 md:py-28 bg-gray-50">
       <div className="container mx-auto px-6 max-w-6xl">
         <ScrollReveal>
           <div className="text-center mb-14">
-            <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-[#00f5ff]/90">
+            <p className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-[#0891b2]">
               Humble Brag
             </p>
-            <h2 className="mt-4 text-4xl font-bold text-white">Not luck. Court vision.</h2>
-            <p className="mt-3 text-lg text-gray-300">See what happens when you move first.</p>
+            <h2 className="mt-4 text-4xl font-bold text-gray-900">Not luck. Court vision.</h2>
+            <p className="mt-3 text-lg text-gray-600">See what happens when you move first.</p>
           </div>
         </ScrollReveal>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {cases.map((caseItem, index) => (
             <ScrollReveal key={caseItem.title} delay={100 + index * 100}>
-              <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-8 shadow-xl backdrop-blur hover-jelly hover:border-[#00f5ff]/40">
+              <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-8 shadow-lg hover-jelly hover:border-[#00f5ff]/40">
                 <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#ff006e] via-[#00f5ff] to-[#ffbe0b]" />
 
-                <p className="text-xs uppercase tracking-[0.2em] text-[#ff006e] mb-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-[#ff006e] mb-2 font-bold">
                   {caseItem.tag}
                 </p>
-                <h3 className="text-xl font-bold text-white mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-6">
                   {caseItem.title}
                 </h3>
 
                 <div className="space-y-4 text-sm">
                   <div>
-                    <p className="text-[#00f5ff] font-semibold mb-1">THE SETUP</p>
-                    <p className="text-gray-300">{caseItem.setup}</p>
+                    <p className="text-[#0891b2] font-bold mb-1 uppercase tracking-wider text-xs">THE SETUP</p>
+                    <p className="text-gray-600">{caseItem.setup}</p>
                   </div>
 
                   <div>
-                    <p className="text-[#00f5ff] font-semibold mb-1">THE MOVE</p>
-                    <p className="text-gray-300">{caseItem.move}</p>
+                    <p className="text-[#0891b2] font-bold mb-1 uppercase tracking-wider text-xs">THE MOVE</p>
+                    <p className="text-gray-600">{caseItem.move}</p>
                   </div>
 
                   <div>
-                    <p className="text-[#00f5ff] font-semibold mb-1">THE RESULT</p>
+                    <p className="text-[#0891b2] font-bold mb-1 uppercase tracking-wider text-xs">THE RESULT</p>
                     <ul className="space-y-1">
                       {caseItem.results.map((result) => (
-                        <li key={result} className="text-gray-300">
+                        <li key={result} className="text-gray-600 font-medium">
                           <span className="text-[#ffbe0b] mr-2">→</span>
                           {result}
                         </li>
@@ -78,8 +78,8 @@ const Highlights = () => {
                   </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-white/10">
-                  <p className="text-sm italic text-gray-400">
+                <div className="mt-6 pt-4 border-t border-gray-100">
+                  <p className="text-sm italic text-gray-500">
                     &ldquo;{caseItem.quote}&rdquo;
                   </p>
                 </div>
