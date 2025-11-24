@@ -254,7 +254,7 @@ export default function AuditSection() {
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.5 }}
-                                        className="bg-gradient-to-br from-white/10 to-black/40 border border-white/20 rounded-3xl p-8 md:p-12 text-center relative overflow-hidden"
+                                        className="bg-gradient-to-br from-white/10 to-black/40 border border-white/20 rounded-3xl p-8 md:p-12 text-center relative overflow-hidden z-20"
                                     >
                                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#00f5ff] via-[#ff006e] to-[#ffbe0b]" />
 
