@@ -10,11 +10,22 @@ interface Suggestion {
     action: string;
 }
 
+interface Financials {
+    revenue?: string;
+    profit?: string;
+    employees?: string;
+    currency?: string;
+    verified?: boolean;
+    orgNumber?: string;
+    city?: string;
+}
+
 export default function AuditSection() {
     const [domain, setDomain] = useState("");
     const [description, setDescription] = useState("");
     const [loading, setLoading] = useState(false);
     const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
+    const [financials, setFinancials] = useState<Financials | null>(null);
     const [error, setError] = useState("");
 
     const [score, setScore] = useState<number | null>(null);
@@ -58,6 +69,7 @@ export default function AuditSection() {
         setLoading(true);
         setError("");
         setSuggestions(null);
+        setFinancials(null);
         setScore(null);
         setVerdict("");
         setShowEmailForm(false);
@@ -79,6 +91,7 @@ export default function AuditSection() {
             setSuggestions(data.suggestions);
             if (data.score) setScore(data.score);
             if (data.verdict) setVerdict(data.verdict);
+            if (data.financials) setFinancials(data.financials);
 
             // Show email form after a short delay
             setTimeout(() => setShowEmailForm(true), 2000);
@@ -224,6 +237,45 @@ export default function AuditSection() {
                                 exit={{ opacity: 0, height: 0 }}
                                 className="space-y-12"
                             >
+                                {/* Financials / Company Data */}
+                                {financials && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.3 }}
+                                        className="mb-8"
+                                    >
+                                        <div className="flex items-center gap-2 mb-4">
+                                            {financials.verified ? (
+                                                <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                                    ✅ Verified Data {financials.orgNumber && `(${financials.orgNumber})`}
+                                                </span>
+                                            ) : (
+                                                <span className="bg-gray-100 text-gray-500 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                                                    🤖 AI Estimate
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Revenue</p>
+                                                <p className="text-xl font-bold text-gray-900">{financials.revenue || "Unknown"}</p>
+                                            </div>
+                                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Employees</p>
+                                                <p className="text-xl font-bold text-gray-900">{financials.employees || "Unknown"}</p>
+                                            </div>
+                                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Profit/Status</p>
+                                                <p className={`text-xl font-bold ${financials.profit?.includes('-') ? 'text-red-500' : 'text-gray-900'}`}>
+                                                    {financials.profit || "Unknown"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+
                                 <div className="grid md:grid-cols-3 gap-6">
                                     {suggestions.map((suggestion, i) => (
                                         <motion.div
@@ -244,105 +296,105 @@ export default function AuditSection() {
                                         </motion.div>
                                     ))}
                                 </div>
-
-                                {/* THE VERDICT SECTION */}
-                                {score !== null && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.5 }}
-                                        className="bg-white border border-gray-200 rounded-3xl p-8 md:p-12 text-center relative overflow-hidden z-20 shadow-xl shadow-gray-200/50"
-                                    >
-                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#00f5ff] via-[#ff006e] to-[#ffbe0b]" />
-
-                                        <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-widest">The Verdict</h3>
-
-                                        <div className="flex justify-center items-center gap-4 mb-6">
-                                            <div className="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-gray-900 to-gray-600">
-                                                {score}
-                                            </div>
-                                            <div className="text-left">
-                                                <div className="text-sm text-gray-400 uppercase tracking-widest font-bold">Jelly Score</div>
-                                                <div className="text-xs text-gray-300">Potential Impact</div>
-                                            </div>
-                                        </div>
-
-                                        <p className="text-xl md:text-2xl text-gray-700 font-medium max-w-2xl mx-auto mb-8 leading-relaxed">
-                                            &quot;{verdict}&quot;
-                                        </p>
-
-                                        {showEmailForm && (
-                                            <motion.div
-                                                initial={{ opacity: 0, scale: 0.9 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                className="max-w-md mx-auto bg-gray-50 rounded-2xl p-6 border border-gray-200"
-                                            >
-                                                {emailStatus === "success" ? (
-                                                    <div className="text-center py-4">
-                                                        <div className="text-4xl mb-2">📨</div>
-                                                        <h4 className="text-gray-900 font-bold text-lg mb-1">Check your inbox!</h4>
-                                                        <p className="text-gray-500 text-sm">We&apos;ll be in touch shortly.</p>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        {score >= 80 ? (
-                                                            <div className="space-y-4">
-                                                                <div className="text-[#0891b2] font-bold uppercase tracking-widest text-sm">🦄 Unicorn Potential Detected</div>
-                                                                <p className="text-gray-600 text-sm">
-                                                                    You qualify for a strategic partnership. We have <span className="text-gray-900 font-bold">3 spots</span> left for 2025.
-                                                                </p>
-                                                                <form onSubmit={(e) => handleEmailSubmit(e, 'application')} className="flex gap-2">
-                                                                    <input
-                                                                        type="email"
-                                                                        required
-                                                                        placeholder="ceo@yourcompany.com"
-                                                                        value={email}
-                                                                        onChange={(e) => setEmail(e.target.value)}
-                                                                        className="flex-1 bg-white border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#00f5ff] focus:ring-2 focus:ring-[#00f5ff]/20"
-                                                                    />
-                                                                    <button
-                                                                        type="submit"
-                                                                        disabled={emailStatus === "sending"}
-                                                                        className="bg-[#00f5ff] text-white font-bold px-6 py-3 rounded-lg hover:bg-[#00f5ff]/90 transition-colors disabled:opacity-50 shadow-md shadow-[#00f5ff]/20"
-                                                                    >
-                                                                        {emailStatus === "sending" ? "..." : "APPLY"}
-                                                                    </button>
-                                                                </form>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="space-y-4">
-                                                                <div className="text-[#ffbe0b] font-bold uppercase tracking-widest text-sm">🚧 Work in Progress</div>
-                                                                <p className="text-gray-600 text-sm">
-                                                                    You&apos;re not ready for us yet. Join the waitlist to get our &quot;Golden Playbook&quot; and improve your score.
-                                                                </p>
-                                                                <form onSubmit={(e) => handleEmailSubmit(e, 'waitlist')} className="flex gap-2">
-                                                                    <input
-                                                                        type="email"
-                                                                        required
-                                                                        placeholder="you@yourcompany.com"
-                                                                        value={email}
-                                                                        onChange={(e) => setEmail(e.target.value)}
-                                                                        className="flex-1 bg-white border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#ffbe0b] focus:ring-2 focus:ring-[#ffbe0b]/20"
-                                                                    />
-                                                                    <button
-                                                                        type="submit"
-                                                                        disabled={emailStatus === "sending"}
-                                                                        className="bg-gray-900 text-white font-bold px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 shadow-md"
-                                                                    >
-                                                                        {emailStatus === "sending" ? "..." : "JOIN"}
-                                                                    </button>
-                                                                </form>
-                                                            </div>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </motion.div>
-                                        )}
-                                    </motion.div>
-                                )}
                             </motion.div>
                         )}
                     </AnimatePresence>
+
+                    {/* THE VERDICT SECTION */}
+                    {score !== null && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5 }}
+                            className="bg-white border border-gray-200 rounded-3xl p-8 md:p-12 text-center relative overflow-hidden z-20 shadow-xl shadow-gray-200/50"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#00f5ff] via-[#ff006e] to-[#ffbe0b]" />
+
+                            <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-widest">The Verdict</h3>
+
+                            <div className="flex justify-center items-center gap-4 mb-6">
+                                <div className="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-gray-900 to-gray-600">
+                                    {score}
+                                </div>
+                                <div className="text-left">
+                                    <div className="text-sm text-gray-400 uppercase tracking-widest font-bold">Jelly Score</div>
+                                    <div className="text-xs text-gray-300">Potential Impact</div>
+                                </div>
+                            </div>
+
+                            <p className="text-xl md:text-2xl text-gray-700 font-medium max-w-2xl mx-auto mb-8 leading-relaxed">
+                                &quot;{verdict}&quot;
+                            </p>
+
+                            {showEmailForm && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="max-w-md mx-auto bg-gray-50 rounded-2xl p-6 border border-gray-200"
+                                >
+                                    {emailStatus === "success" ? (
+                                        <div className="text-center py-4">
+                                            <div className="text-4xl mb-2">📨</div>
+                                            <h4 className="text-gray-900 font-bold text-lg mb-1">Check your inbox!</h4>
+                                            <p className="text-gray-500 text-sm">We&apos;ll be in touch shortly.</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {score >= 80 ? (
+                                                <div className="space-y-4">
+                                                    <div className="text-[#0891b2] font-bold uppercase tracking-widest text-sm">🦄 Unicorn Potential Detected</div>
+                                                    <p className="text-gray-600 text-sm">
+                                                        You qualify for a strategic partnership. We have <span className="text-gray-900 font-bold">3 spots</span> left for 2025.
+                                                    </p>
+                                                    <form onSubmit={(e) => handleEmailSubmit(e, 'application')} className="flex gap-2">
+                                                        <input
+                                                            type="email"
+                                                            required
+                                                            placeholder="ceo@yourcompany.com"
+                                                            value={email}
+                                                            onChange={(e) => setEmail(e.target.value)}
+                                                            className="flex-1 bg-white border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#00f5ff] focus:ring-2 focus:ring-[#00f5ff]/20"
+                                                        />
+                                                        <button
+                                                            type="submit"
+                                                            disabled={emailStatus === "sending"}
+                                                            className="bg-[#00f5ff] text-white font-bold px-6 py-3 rounded-lg hover:bg-[#00f5ff]/90 transition-colors disabled:opacity-50 shadow-md shadow-[#00f5ff]/20"
+                                                        >
+                                                            {emailStatus === "sending" ? "..." : "APPLY"}
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    <div className="text-[#ffbe0b] font-bold uppercase tracking-widest text-sm">🚧 Work in Progress</div>
+                                                    <p className="text-gray-600 text-sm">
+                                                        You&apos;re not ready for us yet. Join the waitlist to get our &quot;Golden Playbook&quot; and improve your score.
+                                                    </p>
+                                                    <form onSubmit={(e) => handleEmailSubmit(e, 'waitlist')} className="flex gap-2">
+                                                        <input
+                                                            type="email"
+                                                            required
+                                                            placeholder="you@yourcompany.com"
+                                                            value={email}
+                                                            onChange={(e) => setEmail(e.target.value)}
+                                                            className="flex-1 bg-white border border-gray-200 rounded-lg px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#ffbe0b] focus:ring-2 focus:ring-[#ffbe0b]/20"
+                                                        />
+                                                        <button
+                                                            type="submit"
+                                                            disabled={emailStatus === "sending"}
+                                                            className="bg-gray-900 text-white font-bold px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 shadow-md"
+                                                        >
+                                                            {emailStatus === "sending" ? "..." : "JOIN"}
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </motion.div>
+                            )}
+                        </motion.div>
+                    )}
                 </div>
             </div>
         </section>

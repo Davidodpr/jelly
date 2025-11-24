@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { fetchSwedishCompanyData } from "@/lib/foretagsapi";
 import { NextResponse } from "next/server";
 
 // Simple in-memory rate limiter with lazy cleanup
@@ -352,31 +353,57 @@ export async function POST(req: Request) {
       }
     `;
 
-    const result = await model.generateContent(prompt);
+    // 4. Analyze with Gemini (and fetch Swedish data in parallel)
+    // We update the prompt to ask for "Estimated Financials" as a fallback
+    const finalPrompt = `
+      ${prompt}
+      
+      IMPORTANT: Also provide an "estimated_financials" object in your JSON response with:
+      - revenue: string (e.g. "10-50 MSEK")
+      - employees: string (e.g. "10-20")
+      - profit: string (e.g. "Profitable")
+      If you cannot estimate, use "Unknown".
+    `;
+
+    const [result, swedishData] = await Promise.all([
+      model.generateContent(finalPrompt),
+      fetchSwedishCompanyData(cleanDomain)
+    ]);
+
     const response = await result.response;
+    const text = response.text();
 
-    if (!response.candidates || response.candidates.length === 0) {
-      console.warn("No candidates returned. Safety settings might be too strict.");
-      return NextResponse.json(
-        { error: "Defense too tight. Could not generate a play." },
-        { status: 400 }
-      );
-    }
+    // Clean up the response text
+    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
-    const text = response.text().trim().replace(/```json/g, "").replace(/```/g, "");
-
-    let data;
+    let auditData;
     try {
-      data = JSON.parse(text);
-    } catch (_e) {
-      console.error("Failed to parse AI response:", text, _e);
+      auditData = JSON.parse(cleanText);
+    } catch (e) {
+      console.error("Failed to parse Gemini JSON:", text);
       return NextResponse.json(
         { error: "Fumbled the ball. Failed to parse insights." },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(data);
+    // Merge Logic: Real data > AI Estimate
+    const financials = {
+      revenue: swedishData?.revenue || auditData.estimated_financials?.revenue || "Unknown",
+      employees: swedishData?.employees || auditData.estimated_financials?.employees || "Unknown",
+      profit: swedishData?.profit || auditData.estimated_financials?.profit || "Unknown",
+      currency: swedishData?.currency || "SEK",
+      verified: !!swedishData, // True if we got a hit from the API
+      orgNumber: swedishData?.orgNumber,
+      city: swedishData?.city
+    };
+
+    const finalResponse = {
+      ...auditData,
+      financials
+    };
+
+    return NextResponse.json(finalResponse);
 
   } catch (error: unknown) {
     console.error("Audit API Error:", error);
