@@ -111,7 +111,7 @@ export default function AuditSection() {
         fetch("/api/generate-image", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ score: data.score, domain }),
+          body: JSON.stringify({ score: data.score, domain, description }),
         })
           .then((imgRes) => imgRes.json())
           .then((imgData) => {

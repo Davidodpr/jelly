@@ -158,22 +158,7 @@ export default function JellyScoreDisplay({ score, mascotReaction }: JellyScoreD
           <p className="text-xs text-gray-600">{currentTier.statusDescription}</p>
         </div>
 
-        {/* Next Milestone Card */}
-        <div className="bg-gradient-to-br from-cyan-50 to-white border border-cyan-200 rounded-xl p-4">
-          <div className="text-xs text-cyan-600 uppercase tracking-wider font-bold mb-1">
-            Next Milestone
-          </div>
-          <div className="text-2xl font-black text-gray-900 mb-1">
-            {score >= 100 ? "Perfect!" : nextTierInfo ? `+${nextTierInfo.gap} pts` : "—"}
-          </div>
-          <p className="text-xs text-gray-600">
-            {score >= 100
-              ? "Ready for quantum leap!"
-              : nextTierInfo
-                ? `to ${nextTierInfo.label}`
-                : "—"}
-          </p>
-        </div>
+
 
         {/* Potential Impact Card */}
         <div className="bg-gradient-to-br from-pink-50 to-white border border-pink-200 rounded-xl p-4">

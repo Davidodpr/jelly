@@ -1,13 +1,16 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-// Image prompts based on score tier
-const SCORE_IMAGE_PROMPTS: Record<string, string> = {
-  asleep: "A cute cartoon jellyfish mascot sleeping on a bench in a basketball court, snoring with Z's floating above, pastel colors, playful style, no text",
-  awake: "A cute cartoon jellyfish mascot stretching and yawning on a basketball court, morning sunrise, energetic but sleepy, pastel colors, playful style, no text",
-  ready: "A cute cartoon jellyfish mascot doing warm-up exercises on a basketball court, determined expression, athletic pose, pastel colors, playful style, no text",
-  scaling: "A cute cartoon jellyfish mascot dunking a basketball with lightning effects, powerful pose, dynamic action shot, pastel colors with electric cyan accents, playful style, no text",
-  exponential: "A cute cartoon jellyfish mascot floating in space wearing a tiny astronaut helmet, holding a trophy, stars and galaxies behind, celebrating victory, pastel colors with gold accents, playful style, no text",
+// Common style for consistency
+const STYLE_SUFFIX = "High quality 3D render, cute character design, translucent jelly material, subsurface scattering, soft studio lighting, vibrant neon accents (cyan #00f5ff, pink #ff006e), depth of field, 8k resolution, octane render style, minimal background";
+
+// Image prompts templates based on score tier
+const SCORE_PROMPT_TEMPLATES: Record<string, (context: string) => string> = {
+  asleep: (context) => `A translucent jelly mascot slumped over on a bench, sleeping with a deflated basketball nearby. The mascot looks glowing but dim. Moody lighting. ${context}`,
+  awake: (context) => `A cute jelly mascot sitting up on a bench, rubbing its eyes, one tentacle holding a coffee cup. Waking up, soft morning light, hopeful expression. ${context}`,
+  ready: (context) => `A determined jelly mascot tying its shoelaces (metaphorically) on a basketball court. Glowing brighter, energetic stance, preparing for the game. Sharp focus. ${context}`,
+  scaling: (context) => `A dynamic action shot of the jelly mascot dribbling a basketball with electric sparks. High energy, motion blur, glowing intensely, confident cool look. ${context}`,
+  exponential: (context) => `The jelly mascot soaring through the air for a slam dunk, wearing a crown or cape. Explosion of confetti and neon light trails. Ultimate victory, majestic pose. ${context}`,
 };
 
 function getScoreTier(score: number): string {
@@ -20,7 +23,7 @@ function getScoreTier(score: number): string {
 
 export async function POST(req: Request) {
   try {
-    const { score, domain } = await req.json();
+    const { score, domain, description } = await req.json();
 
     if (score === undefined || score === null) {
       return NextResponse.json(
@@ -40,20 +43,25 @@ export async function POST(req: Request) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // Use Imagen 3 model for image generation
+    // Use Gemini 3 Pro Image Preview model
     const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" });
 
     const tier = getScoreTier(score);
-    const basePrompt = SCORE_IMAGE_PROMPTS[tier];
+    
+    // Create a context string based on domain and description
+    let businessContext = "";
+    if (domain || description) {
+        const businessName = domain ? `the business '${domain}'` : "a business";
+        const businessDesc = description ? `described as: ${description}` : "";
+        businessContext = `Integrate subtle visual elements representing ${businessName} ${businessDesc} into the mascot's accessories or background props.`;
+    }
 
-    // Add domain context for personalization
-    const prompt = domain
-      ? `${basePrompt}, subtle reference to ${domain} business theme`
-      : basePrompt;
+    const promptTemplate = SCORE_PROMPT_TEMPLATES[tier];
+    const finalPrompt = `${promptTemplate(businessContext)} ${STYLE_SUFFIX}`;
 
-    console.log(`[Image Gen] Generating image for score ${score} (${tier})`);
+    console.log(`[Image Gen] Generating image for score ${score} (${tier}) with prompt length: ${finalPrompt.length}`);
 
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(finalPrompt);
     const response = await result.response;
 
     // Check if we got image data
