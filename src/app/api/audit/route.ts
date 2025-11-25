@@ -1,5 +1,4 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { fetchSwedishCompanyData } from "@/lib/foretagsapi";
 import { NextResponse } from "next/server";
 
 // Simple in-memory rate limiter with lazy cleanup
@@ -298,27 +297,37 @@ export async function POST(req: Request) {
 
     const prompt = `
       You are the Jellymove Brain (Version 3.0).
-      You are a Strategic Business Consultant, not a copywriter.
+      You are a Strategic Business Consultant analyzing COMPANIES, not websites.
+
+      YOUR MISSION:
+      Analyze the BUSINESS through the lens of their digital presence. The website is a SIGNAL of business maturity, operational efficiency, and scalability potential.
 
       YOUR GOAL:
-      1. Analyze the user's business.
-      2. Generate 3 strategic plays using "The 5 Lenses".
-      3. SCORE the business potential (0-100) based on how much impact Jellymove could have.
-      4. Write a short "Verdict" explaining the score.
+      1. Diagnose the BUSINESS (not the site) - What inefficiencies or missed opportunities does their digital presence reveal?
+      2. Generate 3 strategic plays using "The 5 Lenses" that transform their COMPANY (not just their website).
+      3. SCORE the business potential (0-100) based on how much impact Jellymove could have on their BUSINESS OPERATIONS.
+      4. Write a short "Verdict" about the COMPANY's DNA and AI/Automation readiness.
 
-      THE 5 LENSES:
-      1. SUBTRACT (✂️) - What can they stop doing?
-      2. ACCESS (🤝) - Who do they already have access to?
-      3. PRICE (💰) - Can they raise prices or extend contracts?
-      4. FRICTION (🚪) - What is hard that should be easy?
-      5. AUTOMATE (🤖) - What repetitive tasks can be automated?
+      THINK LIKE THIS:
+      - Slow site = Slow decision-making culture
+      - No automation = Manual processes bleeding money
+      - Generic copy = Unclear value proposition to market
+      - Poor UX = Customer journey mirrors internal chaos
+      - Weak conversion = Sales process problems, not design problems
 
-      SCORING GUIDELINES:
+      THE 5 LENSES (Applied to BUSINESS, not design):
+      1. SUBTRACT (✂️) - What business activity/customer segment can they STOP doing?
+      2. ACCESS (🤝) - Who do they already have access to that they're ignoring?
+      3. PRICE (💰) - Can they raise prices, extend contracts, or change billing?
+      4. FRICTION (🚪) - What business process is unnecessarily hard/slow?
+      5. AUTOMATE (🤖) - What repetitive BUSINESS tasks (not just web forms) can be automated?
+
+      SCORING GUIDELINES (Business Impact, NOT Site Quality):
       - Use the FULL range (0-100). Do not default to 70-80.
-      - < 70: Low potential, bad fit, or too early.
-      - 70-79: Average business, incremental improvements possible.
-      - 80-89: High potential, "Unicorn" material if they fix 1-2 things.
-      - 90+: Absolute goldmine, immediate exponential growth possible.
+      - < 70: Low potential - wrong market, bad unit economics, or too early stage.
+      - 70-79: Average business - incremental improvements possible, but fundamentally sound.
+      - 80-89: High potential - "Hidden Gem" if they fix 1-2 key operational issues.
+      - 90+: Absolute goldmine - inefficient but scalable, immediate exponential growth possible.
       - BE CRITICAL. Most businesses are NOT 80+.
 
       TRAINING EXAMPLES (FEW-SHOT):
@@ -330,11 +339,11 @@ export async function POST(req: Request) {
       Website Context (Deep Scan): "${siteContent || "Could not read site, rely on domain and challenge."}"
 
       THINKING PROCESS (Chain-of-Thought):
-      1. Analyze the Business Model.
-      2. Identify the biggest leak or missed opportunity.
-      3. Draft 3 specific plays.
-      4. Determine the "Jelly-Score" (0-100). High score = High potential for rapid growth/transformation.
-      5. Write a 1-sentence Verdict.
+      1. What does their digital presence reveal about HOW THEY RUN THEIR BUSINESS?
+      2. What is the biggest OPERATIONAL leak or missed BUSINESS opportunity?
+      3. Draft 3 specific plays that transform the COMPANY (not cosmetic site fixes).
+      4. Determine the "Jelly-Score" (0-100). High score = High potential for rapid BUSINESS growth/transformation through AI/Automation.
+      5. Write a 1-sentence Verdict about the COMPANY (e.g., "You have a scalable model but manual processes are killing your margins.")
 
       OUTPUT FORMAT:
       Strictly a JSON object. No markdown.
@@ -343,8 +352,8 @@ export async function POST(req: Request) {
           {
             "icon": "emoji",
             "title": "Short hook (max 5 words)",
-            "description": "The Insight (max 25 words)",
-            "action": "First concrete step (max 15 words)"
+            "description": "The Business Insight (max 25 words) - focus on COMPANY/OPERATIONS, not site aesthetics",
+            "action": "First concrete BUSINESS step (max 15 words)"
           },
           ...
         ],
@@ -353,23 +362,8 @@ export async function POST(req: Request) {
       }
     `;
 
-    // 4. Analyze with Gemini (and fetch Swedish data in parallel)
-    // We update the prompt to ask for "Estimated Financials" as a fallback
-    const finalPrompt = `
-      ${prompt}
-      
-      IMPORTANT: Also provide an "estimated_financials" object in your JSON response with:
-      - revenue: string (e.g. "10-50 MSEK")
-      - employees: string (e.g. "10-20")
-      - profit: string (e.g. "Profitable")
-      If you cannot estimate, use "Unknown".
-    `;
-
-    const [result, swedishData] = await Promise.all([
-      model.generateContent(finalPrompt),
-      fetchSwedishCompanyData(cleanDomain)
-    ]);
-
+    // 4. Analyze with Gemini
+    const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
 
@@ -387,23 +381,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Merge Logic: Real data > AI Estimate
-    const financials = {
-      revenue: swedishData?.revenue || auditData.estimated_financials?.revenue || "Unknown",
-      employees: swedishData?.employees || auditData.estimated_financials?.employees || "Unknown",
-      profit: swedishData?.profit || auditData.estimated_financials?.profit || "Unknown",
-      currency: swedishData?.currency || "SEK",
-      verified: !!swedishData, // True if we got a hit from the API
-      orgNumber: swedishData?.orgNumber,
-      city: swedishData?.city
-    };
-
-    const finalResponse = {
-      ...auditData,
-      financials
-    };
-
-    return NextResponse.json(finalResponse);
+    return NextResponse.json(auditData);
 
   } catch (error: unknown) {
     console.error("Audit API Error:", error);

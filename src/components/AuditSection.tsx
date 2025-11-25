@@ -10,22 +10,11 @@ interface Suggestion {
     action: string;
 }
 
-interface Financials {
-    revenue?: string;
-    profit?: string;
-    employees?: string;
-    currency?: string;
-    verified?: boolean;
-    orgNumber?: string;
-    city?: string;
-}
-
 export default function AuditSection() {
     const [domain, setDomain] = useState("");
     const [description, setDescription] = useState("");
     const [loading, setLoading] = useState(false);
     const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
-    const [financials, setFinancials] = useState<Financials | null>(null);
     const [error, setError] = useState("");
 
     const [score, setScore] = useState<number | null>(null);
@@ -69,7 +58,6 @@ export default function AuditSection() {
         setLoading(true);
         setError("");
         setSuggestions(null);
-        setFinancials(null);
         setScore(null);
         setVerdict("");
         setShowEmailForm(false);
@@ -91,7 +79,6 @@ export default function AuditSection() {
             setSuggestions(data.suggestions);
             if (data.score) setScore(data.score);
             if (data.verdict) setVerdict(data.verdict);
-            if (data.financials) setFinancials(data.financials);
 
             // Show email form after a short delay
             setTimeout(() => setShowEmailForm(true), 2000);
@@ -205,7 +192,7 @@ export default function AuditSection() {
                                     {loading ? (
                                         <span className="flex items-center gap-2">
                                             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            ANALYZING SITE STRUCTURE...
+                                            ANALYZING BUSINESS DNA...
                                         </span>
                                     ) : (
                                         <span className="flex items-center gap-2">
@@ -237,39 +224,202 @@ export default function AuditSection() {
                                 exit={{ opacity: 0, height: 0 }}
                                 className="space-y-12"
                             >
-                                {/* Financials / Company Data */}
-                                {financials && (
+                                {/* Jelly Score Breakdown */}
+                                {score !== null && (
                                     <motion.div
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.3 }}
-                                        className="mb-8"
+                                        className="mb-12 bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-sm"
                                     >
-                                        <div className="flex items-center gap-2 mb-4">
-                                            {financials.verified ? (
-                                                <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                                    ✅ Verified Data {financials.orgNumber && `(${financials.orgNumber})`}
-                                                </span>
-                                            ) : (
-                                                <span className="bg-gray-100 text-gray-500 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                                                    🤖 AI Estimate
-                                                </span>
-                                            )}
+                                        <h3 className="text-base md:text-lg font-bold text-gray-900 mb-6 uppercase tracking-widest flex items-center gap-2">
+                                            <span className="text-[#00f5ff]">🎯</span> Jelly Score Breakdown
+                                        </h3>
+
+                                        {/* Score Label */}
+                                        <div className="flex justify-between text-sm font-bold text-gray-600 mb-3">
+                                            <span>Your Score</span>
+                                            <span className="text-gray-900">{score}/100</span>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Revenue</p>
-                                                <p className="text-xl font-bold text-gray-900">{financials.revenue || "Unknown"}</p>
+                                        {/* Unified Progress Bar */}
+                                        <div className="relative h-6 md:h-8 bg-gray-100 rounded-full overflow-visible mb-8">
+                                            {/* Filled Portion */}
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${score}%` }}
+                                                transition={{ duration: 1.5, ease: "easeOut" }}
+                                                className={`h-full rounded-full relative z-10 ${score < 20 ? 'bg-gradient-to-r from-red-500 to-red-400' :
+                                                    score < 40 ? 'bg-gradient-to-r from-orange-500 to-orange-400' :
+                                                        score < 60 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400' :
+                                                            score < 80 ? 'bg-gradient-to-r from-cyan-500 to-cyan-400' :
+                                                                'bg-gradient-to-r from-[#00f5ff] to-[#ff006e]'
+                                                    }`}
+                                            />
+
+                                            {/* Gap Portion (Shimmer Effect) */}
+                                            <div
+                                                className="absolute top-0 right-0 h-full rounded-full border-2 border-dashed border-gray-300 bg-gray-100 overflow-hidden"
+                                                style={{ width: `${100 - score}%` }}
+                                            >
+                                                {/* Animated Shimmer Wave */}
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-200/40 to-transparent w-1/2 animate-shimmer" />
                                             </div>
-                                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Employees</p>
-                                                <p className="text-xl font-bold text-gray-900">{financials.employees || "Unknown"}</p>
+
+                                            {/* Tier Markers */}
+                                            {[20, 40, 60, 80].map((marker) => (
+                                                <div
+                                                    key={marker}
+                                                    className="absolute top-0 bottom-0 w-0.5 bg-white z-20"
+                                                    style={{ left: `${marker}%` }}
+                                                />
+                                            ))}
+
+                                            {/* Score Position Arrow */}
+                                            <div
+                                                className="absolute -top-6 z-30"
+                                                style={{
+                                                    left: `${score}%`,
+                                                    transform: 'translateX(-50%)'
+                                                }}
+                                            >
+                                                <span className="text-2xl animate-bounce">↓</span>
                                             </div>
-                                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Profit/Status</p>
-                                                <p className={`text-xl font-bold ${financials.profit?.includes('-') ? 'text-red-500' : 'text-gray-900'}`}>
-                                                    {financials.profit || "Unknown"}
+                                        </div>
+
+                                        {/* Tier Labels */}
+                                        <div className="relative min-h-[80px] md:min-h-[100px]">
+                                            {/* Desktop Layout */}
+                                            <div className="hidden md:flex justify-between items-center text-center">
+                                                {[
+                                                    { range: [0, 20], emoji: '💤', label: 'Asleep', position: 10, threshold: 20 },
+                                                    { range: [20, 40], emoji: '🌱', label: 'Awake', position: 30, threshold: 40 },
+                                                    { range: [40, 60], emoji: '🚀', label: 'Ready', position: 50, threshold: 60 },
+                                                    { range: [60, 80], emoji: '⚡', label: 'Scaling', position: 70, threshold: 80 },
+                                                    { range: [80, 100], emoji: '🚀', label: 'Exponential', position: 90, threshold: 100 }
+                                                ].map((tier, idx) => {
+                                                    const isActive = score >= tier.range[0] && score < tier.range[1];
+                                                    const isPassed = score >= tier.range[1];
+
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={`flex flex-col items-center transition-all ${isActive ? 'scale-110' : isPassed ? 'opacity-50' : 'opacity-30'
+                                                                }`}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                left: `${tier.position}%`,
+                                                                transform: 'translateX(-50%)'
+                                                            }}
+                                                        >
+                                                            <span className="text-2xl mb-1">{tier.emoji}</span>
+                                                            <span className={`text-xs font-bold uppercase tracking-wider ${isActive ? 'text-gray-900' : 'text-gray-400'
+                                                                }`}>
+                                                                {tier.label}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Mobile Layout */}
+                                            <div className="md:hidden grid grid-cols-5 gap-1 text-center">
+                                                {[
+                                                    { range: [0, 20], emoji: '💤', label: 'Asleep' },
+                                                    { range: [20, 40], emoji: '🌱', label: 'Awake' },
+                                                    { range: [40, 60], emoji: '🚀', label: 'Ready' },
+                                                    { range: [60, 80], emoji: '⚡', label: 'Scaling' },
+                                                    { range: [80, 100], emoji: '🚀', label: 'Exponential' }
+                                                ].map((tier, idx) => {
+                                                    const isActive = score >= tier.range[0] && score < tier.range[1];
+                                                    const isPassed = score >= tier.range[1];
+
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={`flex flex-col items-center transition-all ${isActive ? 'scale-110' : isPassed ? 'opacity-50' : 'opacity-30'
+                                                                }`}
+                                                        >
+                                                            <span className="text-xl mb-1">{tier.emoji}</span>
+                                                            <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? 'text-gray-900' : 'text-gray-400'
+                                                                }`}>
+                                                                {tier.label}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {/* Insight Cards */}
+                                        <div className="grid md:grid-cols-3 gap-4 mt-8">
+                                            {/* Current Status Card */}
+                                            <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-4">
+                                                <div className="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">Current Status</div>
+                                                <div className="text-2xl font-black text-gray-900 mb-1">
+                                                    {score < 20 ? '💤 Asleep' :
+                                                        score < 40 ? '🌱 Awake' :
+                                                            score < 60 ? '🔥 Ready' :
+                                                                score < 80 ? '⚡ Scaling' :
+                                                                    '🚀 Exponential'}
+                                                </div>
+                                                <p className="text-xs text-gray-600">
+                                                    {score < 20 ? 'Significant inefficiencies detected' :
+                                                        score < 40 ? 'Operational gaps identified' :
+                                                            score < 60 ? 'Solid foundation, room to scale' :
+                                                                score < 80 ? 'Strong model, minor optimizations' :
+                                                                    'Peak efficiency achieved'}
+                                                </p>
+                                            </div>
+
+                                            {/* Next Milestone Card */}
+                                            <div className="bg-gradient-to-br from-cyan-50 to-white border border-cyan-200 rounded-xl p-4">
+                                                <div className="text-xs text-cyan-600 uppercase tracking-wider font-bold mb-1">Next Milestone</div>
+                                                <div className="text-2xl font-black text-gray-900 mb-1">
+                                                    {(() => {
+                                                        const tiers = [
+                                                            { threshold: 20, emoji: '🌱', label: 'Awake' },
+                                                            { threshold: 40, emoji: '🚀', label: 'Ready' },
+                                                            { threshold: 60, emoji: '⚡', label: 'Scaling' },
+                                                            { threshold: 80, emoji: '🚀', label: 'Exponential' }
+                                                        ];
+                                                        const nextTier = tiers.find(t => t.threshold > score);
+                                                        if (score >= 100) return "Perfect!";
+                                                        if (nextTier) {
+                                                            const gap = nextTier.threshold - score;
+                                                            return `+${gap} pts`;
+                                                        }
+                                                        return "—";
+                                                    })()}
+                                                </div>
+                                                <p className="text-xs text-gray-600">
+                                                    {(() => {
+                                                        const tiers = [
+                                                            { threshold: 20, label: '🌱 Awake' },
+                                                            { threshold: 40, label: '🚀 Ready' },
+                                                            { threshold: 60, label: '⚡ Scaling Mode' },
+                                                            { threshold: 80, label: '🚀 Quantum Leap' }
+                                                        ];
+                                                        if (score >= 100) return "Ready for quantum leap!";
+                                                        if (score >= 80) return `${100 - score} pts to Exponential!`;
+                                                        const nextTier = tiers.find(t => t.threshold > score);
+                                                        return nextTier ? `to ${nextTier.label}` : "—";
+                                                    })()}
+                                                </p>
+                                            </div>
+
+                                            {/* Potential Impact Card */}
+                                            <div className="bg-gradient-to-br from-pink-50 to-white border border-pink-200 rounded-xl p-4">
+                                                <div className="text-xs text-pink-600 uppercase tracking-wider font-bold mb-1">Impact Potential</div>
+                                                <div className="text-2xl font-black text-gray-900 mb-1">
+                                                    {score < 40 ? 'High' :
+                                                        score < 70 ? 'Very High' :
+                                                            'Exponential'}
+                                                </div>
+                                                <p className="text-xs text-gray-600">
+                                                    {score < 40 ? 'Major transformation needed' :
+                                                        score < 70 ? 'Strategic tweaks = big wins' :
+                                                            'Minor optimizations = explosive growth'}
                                                 </p>
                                             </div>
                                         </div>

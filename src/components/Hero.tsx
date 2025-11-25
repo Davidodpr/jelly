@@ -54,12 +54,6 @@ const Hero = () => {
           >
             Sales plays, AI-powered
           </motion.span>
-          <motion.span
-            whileHover={{ y: -5 }}
-            className="rounded-full border border-gray-200 bg-white px-4 py-2 shadow-sm cursor-default text-gray-600"
-          >
-            Outreach that actually sounds like you
-          </motion.span>
         </motion.div>
 
         <motion.div
@@ -113,7 +107,7 @@ const Hero = () => {
           transition={{ delay: 1.1, staggerChildren: 0.1 }}
           className="flex flex-wrap justify-center gap-2 text-xs text-gray-500"
         >
-          {["Finish smooth", "Can't predict, can't defend", "Score in the paint", "All flair, no fluff"].map((text, i) => (
+          {["Finish smooth", "Can't predict, can't defend", "Built for closers", "All flair, no fluff"].map((text, i) => (
             <motion.span
               key={i}
               initial={{ opacity: 0, y: 10 }}
