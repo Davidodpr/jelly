@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request) {
+export async function GET() {
     const apiKey = process.env.RESEND_API_KEY;
     const hasKey = !!apiKey;
     const keyPreview = hasKey ? `${apiKey.slice(0, 5)}...` : "MISSING";
@@ -47,11 +47,11 @@ export async function GET(req: Request) {
             env: { RESEND_API_KEY: keyPreview }
         });
 
-    } catch (e: any) {
+    } catch (e: unknown) {
         return NextResponse.json({
             status: "error",
             message: "Unexpected error during execution.",
-            error: e.toString(),
+            error: e instanceof Error ? e.message : String(e),
             env: { RESEND_API_KEY: keyPreview }
         }, { status: 500 });
     }

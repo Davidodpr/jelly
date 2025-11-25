@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import type { Suggestion, EmailCaptureRequest } from "@/lib/types";
 
 export async function POST(req: Request) {
   try {
-    const { email, domain, score, type, suggestions, verdict } = await req.json();
+    const { email, domain, score, type, suggestions, verdict }: EmailCaptureRequest = await req.json();
 
     if (!email || !email.includes("@")) {
       return NextResponse.json(
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
                         <p style="font-size: 18px;"><strong>Verdict:</strong> "${verdict}"</p>
                         <hr style="border: 1px solid #eee; margin: 20px 0;" />
                         <h2>Your 3 Plays:</h2>
-                        ${suggestions ? suggestions.map((s: any) => `
+                        ${suggestions ? suggestions.map((s: Suggestion) => `
                             <div style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
                                 <h3 style="margin-top: 0;">${s.icon} ${s.title}</h3>
                                 <p>${s.description}</p>

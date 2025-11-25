@@ -245,6 +245,7 @@ export async function POST(req: Request) {
       );
     }
     rateLimit.set(ip, now);
+    lazyCleanup();
 
     // Increment daily counter
     dailyRequestCount++;
@@ -373,7 +374,7 @@ export async function POST(req: Request) {
     let auditData;
     try {
       auditData = JSON.parse(cleanText);
-    } catch (e) {
+    } catch {
       console.error("Failed to parse Gemini JSON:", text);
       return NextResponse.json(
         { error: "Fumbled the ball. Failed to parse insights." },
