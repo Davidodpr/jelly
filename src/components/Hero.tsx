@@ -8,8 +8,8 @@ const Hero = () => {
     <section className="relative flex min-h-screen items-center justify-center px-6 text-gray-900 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-white via-gray-50 to-white" />
 
-      {/* Animated background blobs (Subtle) */}
-      {/* Fluid Cloud Mesh Gradient */}
+      {/* Animated background blobs (Optimized) */}
+      {/* Fluid Cloud Mesh Gradient - using radial gradients instead of blur filters for performance */}
       <div className="absolute top-0 left-0 w-full h-[600px] overflow-hidden pointer-events-none">
         <motion.div
           animate={{
@@ -18,7 +18,8 @@ const Hero = () => {
             y: [0, -20, 0],
           }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-[20%] -left-[10%] w-[800px] h-[800px] bg-[#ff006e]/10 rounded-full blur-[120px]"
+          className="absolute -top-[20%] -left-[10%] w-[800px] h-[800px] bg-[radial-gradient(circle,rgba(255,0,110,0.08)_0%,transparent_70%)]"
+          style={{ willChange: "transform" }}
         />
         <motion.div
           animate={{
@@ -27,7 +28,8 @@ const Hero = () => {
             y: [0, 20, 0],
           }}
           transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-[10%] left-[20%] w-[600px] h-[600px] bg-[#00f5ff]/10 rounded-full blur-[100px]"
+          className="absolute -top-[10%] left-[20%] w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(0,245,255,0.08)_0%,transparent_70%)]"
+          style={{ willChange: "transform" }}
         />
         <motion.div
           animate={{
@@ -35,7 +37,8 @@ const Hero = () => {
             x: [0, 40, 0],
           }}
           transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[10%] right-[10%] w-[500px] h-[500px] bg-[#ffbe0b]/10 rounded-full blur-[100px]"
+          className="absolute top-[10%] right-[10%] w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(255,190,11,0.08)_0%,transparent_70%)]"
+          style={{ willChange: "transform" }}
         />
         {/* White overlay to fade it out at the bottom */}
         <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white to-transparent" />
