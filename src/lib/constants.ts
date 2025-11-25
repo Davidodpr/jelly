@@ -67,7 +67,8 @@ export function getScoreGradient(score: number): string {
 export function getImpactPotential(score: number): { level: string; description: string } {
   if (score < 40) return { level: 'High', description: 'Major transformation needed' };
   if (score < 70) return { level: 'Very High', description: 'Strategic tweaks = big wins' };
-  return { level: 'Exponential', description: 'Minor optimizations = explosive growth' };
+  if (score < 85) return { level: 'Rapid', description: 'Small moves = big results' };
+  return { level: 'Legendary', description: 'You're already winning. Let's dominate.' };
 }
 
 // Brand colors

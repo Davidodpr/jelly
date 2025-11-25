@@ -136,10 +136,10 @@ function HighScoreForm({ email, emailStatus, onEmailChange, onSubmit }: EmailFor
   return (
     <div className="space-y-4">
       <div className="text-[#0891b2] font-bold uppercase tracking-widest text-sm">
-        🦄 Unicorn Potential Detected
+        🚀 Exponential Match
       </div>
       <p className="text-gray-600 text-sm">
-        You qualify for a strategic partnership. We have{" "}
+        You&apos;re already playing at a high level. Let&apos;s talk about taking it further.{" "}
         <span className="text-gray-900 font-bold">3 spots</span> left for 2025.
       </p>
       <form onSubmit={onSubmit} className="flex gap-2">
