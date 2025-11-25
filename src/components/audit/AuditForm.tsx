@@ -2,12 +2,15 @@
 
 import { motion } from "framer-motion";
 import { QUICK_PROMPTS, VALIDATION } from "@/lib/constants";
+import MascotMessage from "../MascotMessage";
 
 interface AuditFormProps {
   domain: string;
   description: string;
   loading: boolean;
   error: string;
+  loadingMessage?: string;
+  errorMessage?: string;
   onDomainChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -18,6 +21,8 @@ export default function AuditForm({
   description,
   loading,
   error,
+  loadingMessage,
+  errorMessage,
   onDomainChange,
   onDescriptionChange,
   onSubmit,
@@ -93,7 +98,7 @@ export default function AuditForm({
           </div>
         </div>
 
-        <div className="flex justify-center pt-4">
+        <div className="flex flex-col items-center gap-4 pt-4">
           <button
             type="submit"
             disabled={loading}
@@ -102,7 +107,7 @@ export default function AuditForm({
             {loading ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ANALYZING BUSINESS DNA...
+                ANALYZING...
               </span>
             ) : (
               <span className="flex items-center gap-2">
@@ -113,16 +118,23 @@ export default function AuditForm({
               </span>
             )}
           </button>
+
+          {loading && loadingMessage && (
+            <MascotMessage message={loadingMessage} size="sm" />
+          )}
         </div>
 
         {error && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center text-[#ff006e] font-bold mt-4"
-          >
-            {error}
-          </motion.div>
+          <div className="mt-4 flex flex-col items-center gap-2">
+            {errorMessage && <MascotMessage message={errorMessage} size="sm" />}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center text-[#ff006e] font-bold"
+            >
+              {error}
+            </motion.div>
+          </div>
         )}
       </form>
     </motion.div>

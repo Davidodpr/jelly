@@ -25,6 +25,7 @@ export interface EmailCaptureRequest {
   type: 'application' | 'waitlist';
   suggestions: Suggestion[];
   verdict: string;
+  generatedImage?: string;
 }
 
 export type EmailStatus = 'idle' | 'sending' | 'success' | 'error';

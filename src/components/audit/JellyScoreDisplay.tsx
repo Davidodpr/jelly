@@ -9,12 +9,14 @@ import {
   getScoreGradient,
   getImpactPotential,
 } from "@/lib/constants";
+import MascotMessage from "../MascotMessage";
 
 interface JellyScoreDisplayProps {
   score: number;
+  mascotReaction?: string;
 }
 
-export default function JellyScoreDisplay({ score }: JellyScoreDisplayProps) {
+export default function JellyScoreDisplay({ score, mascotReaction }: JellyScoreDisplayProps) {
   const currentTier = getCurrentTier(score);
   const nextTierInfo = getNextTierInfo(score);
   const impactPotential = getImpactPotential(score);
@@ -26,9 +28,15 @@ export default function JellyScoreDisplay({ score }: JellyScoreDisplayProps) {
       transition={{ delay: 0.3 }}
       className="mb-12 bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-sm"
     >
-      <h3 className="text-base md:text-lg font-bold text-gray-900 mb-6 uppercase tracking-widest flex items-center gap-2">
+      <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4 uppercase tracking-widest flex items-center gap-2">
         <span className="text-[#00f5ff]">🎯</span> Jelly Score Breakdown
       </h3>
+
+      {mascotReaction && (
+        <div className="mb-6">
+          <MascotMessage message={mascotReaction} size="md" />
+        </div>
+      )}
 
       {/* Score Label */}
       <div className="flex justify-between text-sm font-bold text-gray-600 mb-3">

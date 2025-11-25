@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import type { EmailStatus } from "@/lib/types";
 
 interface VerdictSectionProps {
@@ -9,6 +10,8 @@ interface VerdictSectionProps {
   showEmailForm: boolean;
   email: string;
   emailStatus: EmailStatus;
+  generatedImage?: string | null;
+  imageLoading?: boolean;
   onEmailChange: (value: string) => void;
   onEmailSubmit: (e: React.FormEvent, type: "application" | "waitlist") => void;
 }
@@ -19,6 +22,8 @@ export default function VerdictSection({
   showEmailForm,
   email,
   emailStatus,
+  generatedImage,
+  imageLoading,
   onEmailChange,
   onEmailSubmit,
 }: VerdictSectionProps) {
@@ -50,6 +55,34 @@ export default function VerdictSection({
       <p className="text-xl md:text-2xl text-gray-700 font-medium max-w-2xl mx-auto mb-8 leading-relaxed">
         &quot;{verdict}&quot;
       </p>
+
+      {/* Generated Image */}
+      {(imageLoading || generatedImage) && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-8"
+        >
+          {imageLoading ? (
+            <div className="w-64 h-64 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-8 h-8 border-2 border-gray-300 border-t-[#00f5ff] rounded-full animate-spin mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Generating your artwork...</p>
+              </div>
+            </div>
+          ) : generatedImage ? (
+            <div className="relative w-64 h-64 mx-auto">
+              <Image
+                src={generatedImage}
+                alt="Your personalized Jelly Score artwork"
+                fill
+                className="object-contain rounded-2xl shadow-lg"
+                unoptimized
+              />
+            </div>
+          ) : null}
+        </motion.div>
+      )}
 
       {showEmailForm && (
         <motion.div

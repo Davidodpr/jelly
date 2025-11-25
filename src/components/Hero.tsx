@@ -99,6 +99,14 @@ const Hero = () => {
               Get Audited
             </JellyButton>
           </motion.div>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.0 }}
+            className="mt-6 text-xs text-gray-400 tracking-wide"
+          >
+            Built on millions of real conversations. We&apos;ve heard every &quot;no&quot; so you don&apos;t have to.
+          </motion.p>
         </motion.div>
 
         <motion.div

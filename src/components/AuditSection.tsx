@@ -4,6 +4,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Suggestion, EmailStatus } from "@/lib/types";
 import {
+  getMascotLoading,
+  getMascotError,
+  getMascotReaction,
+} from "@/lib/mascot";
+import {
   AuditForm,
   JellyScoreDisplay,
   SuggestionsGrid,
@@ -17,10 +22,17 @@ export default function AuditSection() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Mascot state
+  const [loadingMessage, setLoadingMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [mascotReaction, setMascotReaction] = useState("");
+
   // Results state
   const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
   const [score, setScore] = useState<number | null>(null);
   const [verdict, setVerdict] = useState("");
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
 
   // Email capture state
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -45,6 +57,7 @@ export default function AuditSection() {
           type,
           suggestions,
           verdict,
+          generatedImage,
         }),
       });
 
@@ -63,10 +76,15 @@ export default function AuditSection() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setErrorMessage("");
     setSuggestions(null);
     setScore(null);
     setVerdict("");
     setShowEmailForm(false);
+    setMascotReaction("");
+    setLoadingMessage(getMascotLoading());
+    setGeneratedImage(null);
+    setImageLoading(false);
 
     try {
       const res = await fetch("/api/audit", {
@@ -84,12 +102,36 @@ export default function AuditSection() {
 
       const data = await res.json();
       setSuggestions(data.suggestions);
-      if (data.score) setScore(data.score);
+      if (data.score) {
+        setScore(data.score);
+        setMascotReaction(getMascotReaction(data.score));
+
+        // Generate image in the background
+        setImageLoading(true);
+        fetch("/api/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ score: data.score, domain }),
+        })
+          .then((imgRes) => imgRes.json())
+          .then((imgData) => {
+            if (imgData.image) {
+              setGeneratedImage(imgData.image);
+            }
+          })
+          .catch((err) => {
+            console.error("Image generation failed:", err);
+          })
+          .finally(() => {
+            setImageLoading(false);
+          });
+      }
       if (data.verdict) setVerdict(data.verdict);
 
       // Show email form after a short delay
       setTimeout(() => setShowEmailForm(true), 2000);
     } catch (err: unknown) {
+      setErrorMessage(getMascotError());
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -97,6 +139,7 @@ export default function AuditSection() {
       }
     } finally {
       setLoading(false);
+      setLoadingMessage("");
     }
   };
 
@@ -142,6 +185,8 @@ export default function AuditSection() {
             description={description}
             loading={loading}
             error={error}
+            loadingMessage={loadingMessage}
+            errorMessage={errorMessage}
             onDomainChange={setDomain}
             onDescriptionChange={setDescription}
             onSubmit={handleSubmit}
@@ -157,7 +202,9 @@ export default function AuditSection() {
                 className="space-y-12"
               >
                 {/* Jelly Score Breakdown */}
-                {score !== null && <JellyScoreDisplay score={score} />}
+                {score !== null && (
+                  <JellyScoreDisplay score={score} mascotReaction={mascotReaction} />
+                )}
 
                 {/* Suggestions Grid */}
                 <SuggestionsGrid suggestions={suggestions} />
@@ -173,6 +220,8 @@ export default function AuditSection() {
               showEmailForm={showEmailForm}
               email={email}
               emailStatus={emailStatus}
+              generatedImage={generatedImage}
+              imageLoading={imageLoading}
               onEmailChange={setEmail}
               onEmailSubmit={handleEmailSubmit}
             />
