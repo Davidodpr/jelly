@@ -68,7 +68,7 @@ export function getImpactPotential(score: number): { level: string; description:
   if (score < 40) return { level: 'High', description: 'Major transformation needed' };
   if (score < 70) return { level: 'Very High', description: 'Strategic tweaks = big wins' };
   if (score < 85) return { level: 'Rapid', description: 'Small moves = big results' };
-  return { level: 'Legendary', description: 'You're already winning. Let's dominate.' };
+  return { level: 'Legendary', description: "You're already winning. Let's dominate." };
 }
 
 // Brand colors
