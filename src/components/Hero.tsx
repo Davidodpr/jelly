@@ -78,7 +78,7 @@ const Hero = () => {
                 href="#audit-section"
                 className="rounded-full bg-gray-900 px-10 py-5 text-lg font-black text-white shadow-2xl transition hover:scale-105 hover:bg-black active:scale-95 flex items-center gap-3"
               >
-                Game Film Review <span className="text-[#00f5ff]">→</span>
+                Get Scouted <span className="text-[#00f5ff]">→</span>
               </JellyButton>
               
               <span className="text-sm font-medium text-gray-500">
