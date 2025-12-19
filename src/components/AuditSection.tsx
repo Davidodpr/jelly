@@ -162,7 +162,7 @@ export default function AuditSection() {
             whileInView={{ opacity: 1, y: 0 }}
             className="inline-block px-4 py-1.5 mb-6 rounded-full bg-white border border-gray-200 shadow-sm text-xs font-black tracking-[0.2em] text-[#ff006e] uppercase"
           >
-            The Gatekeeper 3.0
+            Scouting Report
           </motion.div>
           
           <motion.h2
@@ -186,24 +186,15 @@ export default function AuditSection() {
             Analyze your business potential and see if you qualify.
           </motion.p>
 
-          {/* Scarcity Counter */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            className="mt-10 flex items-center justify-center gap-4"
+          {/* Confidence Statement */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mt-8 text-sm font-medium text-gray-500"
           >
-            <div className="h-px w-12 bg-gray-200" />
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ff006e] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#ff006e]"></span>
-              </span>
-              <span className="text-sm font-bold text-gray-900 tracking-widest">
-                SPOTS LEFT IN 2025: <span className="text-[#ff006e]">1</span>
-              </span>
-            </div>
-            <div className="h-px w-12 bg-gray-200" />
-          </motion.div>
+            We&apos;re pickier than you are.
+          </motion.p>
         </div>
 
         <div className="grid md:grid-cols-1 gap-12">
