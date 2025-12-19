@@ -1,23 +1,23 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-// Common style for consistency
-const STYLE_SUFFIX = "High quality 3D render, cute character design, translucent jelly material, subsurface scattering, soft studio lighting, vibrant neon accents (cyan #00f5ff, pink #ff006e), depth of field, 8k resolution, octane render style, minimal background";
+// Common style for consistency - Cinematic & Premium
+const STYLE_SUFFIX = "8k resolution, cinematic lighting, volumetric fog, octane render, highly detailed translucent jelly texture, subsurface scattering, vibrant neon accents (cyan #00f5ff, pink #ff006e), macro photography, shallow depth of field, professional studio setting, sharp focus, masterpiece";
 
 // Image prompts templates based on score tier
 const SCORE_PROMPT_TEMPLATES: Record<string, (context: string) => string> = {
-  asleep: (context) => `A translucent jelly mascot slumped over on a bench, sleeping with a deflated basketball nearby. The mascot looks glowing but dim. Moody lighting. ${context}`,
-  awake: (context) => `A cute jelly mascot sitting up on a bench, rubbing its eyes, one tentacle holding a coffee cup. Waking up, soft morning light, hopeful expression. ${context}`,
-  ready: (context) => `A determined jelly mascot tying its shoelaces (metaphorically) on a basketball court. Glowing brighter, energetic stance, preparing for the game. Sharp focus. ${context}`,
-  scaling: (context) => `A dynamic action shot of the jelly mascot dribbling a basketball with electric sparks. High energy, motion blur, glowing intensely, confident cool look. ${context}`,
-  exponential: (context) => `The jelly mascot soaring through the air for a slam dunk, wearing a crown or cape. Explosion of confetti and neon light trails. Ultimate victory, majestic pose. ${context}`,
+  asleep: (context) => `A glowing translucent jelly mascot slumped on a dimly lit basketball bench, sleeping deeply. A slightly deflated neon basketball rests nearby. ${context} The mood is quiet and atmospheric with cool blue shadows.`,
+  awake: (context) => `A cute translucent jelly mascot sitting on a gym bench, rubbing its eyes. One tentacle holds a steaming neon-rimmed coffee mug. Soft morning sunlight filtering through high windows. ${context} Hopeful and cozy atmosphere.`,
+  ready: (context) => `A determined translucent jelly mascot in a heroic stance on a polished basketball court, tying glowing neon shoelaces. Dust motes dancing in light beams. ${context} Intense focus and preparation.`,
+  scaling: (context) => `An action shot of a glowing translucent jelly mascot performing a high-speed crossover dribble. Electric sparks and neon light trails following the movement. ${context} High energy, motion blur on the background, sharp focus on the mascot.`,
+  exponential: (context) => `The translucent jelly mascot soaring through the air for a legendary slam dunk. Wearing a flowing neon cape. Explosion of holographic confetti. ${context} Ultimate victory, god-ray lighting, majestic and powerful.`,
 };
 
 function getScoreTier(score: number): string {
-  if (score < 20) return "asleep";
-  if (score < 40) return "awake";
-  if (score < 60) return "ready";
-  if (score < 80) return "scaling";
+  if (score < 50) return "asleep";
+  if (score < 70) return "awake";
+  if (score < 80) return "ready";
+  if (score < 90) return "scaling";
   return "exponential";
 }
 
@@ -51,9 +51,8 @@ export async function POST(req: Request) {
     // Create a context string based on domain and description
     let businessContext = "";
     if (domain || description) {
-        const businessName = domain ? `the business '${domain}'` : "a business";
-        const businessDesc = description ? `described as: ${description}` : "";
-        businessContext = `Integrate subtle visual elements representing ${businessName} ${businessDesc} into the mascot's accessories or background props.`;
+        const businessName = domain ? `'${domain}'` : "the business";
+        businessContext = `The mascot is wearing a small badge with a subtle logo for ${businessName}. A futuristic holographic tablet nearby shows business charts.`;
     }
 
     const promptTemplate = SCORE_PROMPT_TEMPLATES[tier];

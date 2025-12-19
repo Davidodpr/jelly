@@ -58,17 +58,11 @@ async function fetchSiteContent(url: string): Promise<string> {
       links.push({ href: match[1], text: match[2].replace(/<[^>]+>/g, "").trim() });
     }
 
-    // Find the most relevant sub-page (Pricing > Services > About)
-    const keywords = ["pricing", "pris", "tjänster", "services", "about", "om oss"];
-    let bestLink = "";
-
-    for (const keyword of keywords) {
-      const found = links.find(l => l.href && (l.href.toLowerCase().includes(keyword) || l.text.toLowerCase().includes(keyword)));
-      if (found) {
-        bestLink = found.href;
-        break;
-      }
-    }
+    // Find the most relevant sub-pages (Pricing > Services > Careers > About)
+    const keywords = ["pricing", "pris", "tjänster", "services", "careers", "jobb", "about", "om oss"];
+    const linksToFetch = links
+      .filter(l => l.href && keywords.some(k => l.href.toLowerCase().includes(k) || l.text.toLowerCase().includes(k)))
+      .slice(0, 3); // Limit to top 3 findings
 
     // Basic cleanup of main page
     const text = html
@@ -78,29 +72,39 @@ async function fetchSiteContent(url: string): Promise<string> {
       .replace(/\s+/g, " ")
       .trim();
 
-    let extraContent = "";
+    // Scan for tech signals in HTML (HubSpot, Stripe, etc)
+    const techSignals = [];
+    if (html.includes("js.hs-scripts.com")) techSignals.push("HubSpot");
+    if (html.includes("stripe.com")) techSignals.push("Stripe");
+    if (html.includes("shopify.com")) techSignals.push("Shopify");
+    if (html.includes("intercom.io")) techSignals.push("Intercom");
+    if (html.includes("googletagmanager.com")) techSignals.push("GTM");
 
-    // Fetch sub-page if found
-    if (bestLink) {
-      // Handle relative URLs
-      if (!bestLink.startsWith("http")) {
+    let extraContent = `\n\n--- TECH SIGNALS ---\n${techSignals.join(", ") || "None detected"}`;
+
+    // Fetch sub-pages in parallel
+    const subPagesPromises = linksToFetch.map(async (l) => {
+      let fullUrl = l.href;
+      if (!fullUrl.startsWith("http")) {
         const baseUrl = url.replace(/\/$/, "");
-        bestLink = bestLink.startsWith("/") ? `${baseUrl}${bestLink}` : `${baseUrl}/${bestLink}`;
+        fullUrl = fullUrl.startsWith("/") ? `${baseUrl}${fullUrl}` : `${baseUrl}/${fullUrl}`;
       }
-
       try {
-        console.log(`[Deep Scan] Fetching sub-page: ${bestLink}`);
-        const subRes = await fetch(bestLink, { signal: AbortSignal.timeout(3000) });
+        const subRes = await fetch(fullUrl, { signal: AbortSignal.timeout(3000) });
         if (subRes.ok) {
           const subHtml = await subRes.text();
-          extraContent += `\n\n--- LINKED PAGE (${bestLink}) ---\n` + subHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 5000);
+          return `\n\n--- PAGE: ${fullUrl} ---\n` + subHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 3000);
         }
       } catch (e) {
-        console.warn(`[Deep Scan] Failed to fetch sub-page ${bestLink}:`, e);
+        console.warn(`[Deep Scan] Failed to fetch sub-page ${fullUrl}:`, e);
       }
-    }
+      return "";
+    });
 
-    return (text.slice(0, 15000) + extraContent).slice(0, 20000);
+    const subPagesContent = await Promise.all(subPagesPromises);
+    extraContent += subPagesContent.join("");
+
+    return (text.slice(0, 10000) + extraContent).slice(0, 18000);
   } catch (error) {
     console.warn("Failed to fetch site content:", error);
     return "";
@@ -108,117 +112,57 @@ async function fetchSiteContent(url: string): Promise<string> {
 }
 
 const FEW_SHOT_EXAMPLES = `
-EXAMPLE 1:
-Domain: byggapp.se
-Description: "Vi säljer projektsystem till små byggfirmor men CAC är för hög via Google Ads."
-Context: Säljer månadsvis till lågt pris. Konkurrerar med Excel. Enmansfirmor kräver samma support som större kunder men betalar minst.
-Output:
+EXAMPLE 1: buildapp.io
+Challenge: "Our CAC is too high."
+Deep Scan: pricing shows $29/mo, careers searching for 3 sales reps.
 [
-  {
-    "icon": "🤝",
-    "title": "Gör Dom Till Testare",
-    "description": "Dina bästa kunder hänger i Facebook-grupper och snackar verktyg hela dagarna. Du betalar Google istället för att prata med dom.",
-    "action": "Hitta 3 relevanta FB-grupper. Identifiera de mest engagerade. Erbjud 'advisor-rabatt' mot 6 månaders testperiod och feedback."
-  },
   {
     "icon": "✂️",
-    "title": "Sparka Enmansfirmorna",
-    "description": "De kräver lika mycket support men betalar minst. Varje såld licens till dem kostar dig pengar.",
-    "action": "Sätt ett min-pris som skrämmer bort hobbyprojekten. Låt kunder 'ansöka' och var tydlig: ni riktar er mot firmor med minst 1M i omsättning."
+    "title": "Kill the $29 Plan",
+    "description": "Your unit economics are broken. Each customer costs more in support than they pay in margin. You're hiring sales for a low-LTV product.",
+    "action": "Remove the self-serve $29 plan. Introduce a $250/mo minimum 'Professional' tier with high-touch onboarding."
   },
   {
-    "icon": "💰",
-    "title": "Sälj Året, Finansiera Tillväxten",
-    "description": "Byggare har egna cashflow-problem. Du hjälper inte genom att fakturera månadsvis - och du får inget kapital att växa med.",
-    "action": "Byt till årsfaktura med 2 månader gratis. Du får in cash direkt, de får en deal. Win-win."
-  }
-],
-"score": 88,
-"verdict": "You have a killer product but you are selling it to the wrong people."
-
-EXAMPLE 2:
-Domain: solenergi-syd.se
-Description: "Vi installerar solceller till villaägare men alla jagar samma leads från jämförelsesajter. Marginalerna kryper ner."
-Context: Betalar per lead från jämförelsesajter. Konkurrerar på pris mot 4 andra på varje offert. Inga återkommande intäkter efter installation.
-Output:
-[
-  {
-    "icon": "🏠",
-    "title": "Mäklarna Sitter På Guldet",
-    "description": "Varje husköpare funderar på energikostnader. Mäklare vill ge mervärde till sina köpare. Du jagar cold leads när warm leads byter ägare varje dag i din stad.",
-    "action": "Kontakta 5 lokala mäklare. Erbjud 'Solcells-värdering' som de kan ge sina köpare. Du får leads, de får en differentierare."
-  },
-  {
-    "icon": "🔄",
-    "title": "Du Säljer En Gång, Sen Försvinner Du",
-    "description": "Installation är en engångsdeal. Men kunden har paneler i 25 år och noll relation med dig. Varje nöjd kund är en missad intäkt.",
-    "action": "Skapa service-avtal: årlig kontroll, produktionsgaranti, prioriterad support. Recurring revenue + kunden har anledning att prata om dig."
-  },
-  {
-    "icon": "🗑️",
-    "title": "Jämförelsesajterna Äter Din Vinst",
-    "description": "Du betalar dyrt per lead för att tävla mot 4 andra på pris. Loppet är riggat mot dig från start.",
-    "action": "Halvera budget på jämförelsesajter. Lägg på referral-bonus till kunder som tipsar grannar. Varmaste leadsen, noll priskonkurrens."
-  }
-],
-"score": 72,
-"verdict": "You are fighting a losing battle on price instead of building a brand."
-
-EXAMPLE 3:
-Domain: strategikonsult.se
-Description: "Vi säljer strategiprojekt till medelstora bolag men säljcykeln är 6+ månader. Vi har för få deals i pipen."
-Context: Säljer stora projekt. Kräver många möten innan beslut. Founders gör all försäljning själva.
-Output:
-[
-  {
-    "icon": "🚪",
-    "title": "Din Front Door Är För Tung",
-    "description": "Ingen köper ett stort projekt utan att ha testat dig först. Du ber om giftermål på första dejten.",
-    "action": "Skapa en 'Strategi-Sprint': kort format, avgränsad deliverable, tydligt pris. De som gillar det konverterar till stora projekt."
-  },
-  {
-    "icon": "📞",
-    "title": "Dina Gamla Kunder Har Bytt Jobb",
-    "description": "Du har ett gäng nöjda köpare. Hälften har bytt bolag sen dess. De vill köpa igen men du ringer aldrig.",
-    "action": "LinkedIn-stalk dina champions från senaste 3 åren. Skicka: 'Hej, såg du bytte - hur ser det ut på nya stället?'"
+    "icon": "🤝",
+    "title": "Access the Channel",
+    "description": "Stop chasing individual contractors. They follow their material suppliers. You have access but you're not using it.",
+    "action": "Contact the top 3 specialized material suppliers. Offer a co-branded 'Efficiency Tool' for their VIP accounts."
   },
   {
     "icon": "🤖",
-    "title": "Du Sitter I Möten Du Inte Borde Ta",
-    "description": "Varje intro-möte tar en timme. Majoriteten är fel fit. Du blöder tid på folk som aldrig kommer köpa.",
-    "action": "Spela in en video som förklarar hur ni jobbar och ungefärlig prisrange. Skicka innan möte. De som bokar är seriösa."
+    "title": "Automate Onboarding",
+    "description": "Manual setup for a $29 plan is business suicide. Your current process is manual and slow.",
+    "action": "Use Stripe Tax and automated workspace provisioning to cut human touch from the sign-up flow."
   }
 ],
-"score": 64,
-"verdict": "Your sales process is designed to repel customers, not attract them."
+"score": 42,
+"verdict": "You are running a hobby at scale. Fix the pricing before you burn more cash on sales reps."
 
-EXAMPLE 4:
-Domain: kaffeprenumeration.se
-Description: "Vi säljer kaffeprenumerationer till privatpersoner men churn är 40% efter 3 månader. Vi jagar hela tiden nya kunder."
-Context: Lågt ordervärde per månad. Marknadsför via Instagram. Ingen B2B-försäljning.
-Output:
+EXAMPLE 2: cleanbeauty.se
+Challenge: "We want to scale international."
+Deep Scan: shopify site, using Intercom, about page mentions family business in Skåne.
 [
   {
-    "icon": "🏢",
-    "title": "Kontoret Dricker Mer Än Viktor, 34",
-    "description": "Du jagar privatpersoner som churnar efter 3 månader. Ett kontor med 20 personer är 20x volym och stannar i flera år.",
-    "action": "Skapa ett 'Office-paket' med vettigt pris för volym. Ring 10 lokala företag med 10-50 anställda denna vecka."
+    "icon": "💰",
+    "title": "Premium Packaging, Not Price",
+    "description": "Your brand looks luxe, but you're priced like a supermarket. You are leaving 40% margin on the table in the US market.",
+    "action": "Raise price by 30% for international markets. Use the margin to pay for premium influencers."
   },
   {
-    "icon": "✂️",
-    "title": "Instagram-kunder Är Window Shoppers",
-    "description": "Billig CPA men de köpte för att de scrollade förbi en snygg bild. Noll intention. Därför churn.",
-    "action": "Pausa Instagram en månad. Lägg budget på Google-sök efter 'bästa kaffeprenumeration'. Folk som aktivt letar churnar mindre."
+    "icon": "🚪",
+    "title": "The International Wall",
+    "description": "Your checkout still asks for Personnummer if they switch to English. It's a conversion killer for anyone outside Sweden.",
+    "action": "Switch to Shopify Markets Pro. Localize currency, taxes, and shipping globally overnight."
   },
   {
-    "icon": "🔒",
-    "title": "Månad-till-månad = Churn Built-In",
-    "description": "Ingen binding betyder att ingen vana hinner bildas. De avbryter innan de blivit kära i ditt kaffe.",
-    "action": "Erbjud en 'smakresa' över flera månader med tema varje leverans. Kunden committar längre, du får högre LTV."
+    "icon": "🤝",
+    "title": "Micro-Ambassadors",
+    "description": "You have 500+ repeat customers in Skåne. They are your best marketing team but they have no tools.",
+    "action": "Launch a referral program giving 'founder-exclusive' early access to new products for top referrers."
   }
 ],
-"score": 94,
-"verdict": "You have a recurring revenue goldmine but you are digging in the wrong spot."
+"score": 89,
+"verdict": "You have a world-class product trapped in a local checkout. The potential is exponential."
 `;
 
 export async function POST(req: Request) {
@@ -261,9 +205,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (description.length > 300) {
+    if (description.length > 500) {
       return NextResponse.json(
-        { error: "Description is too long (max 300 chars)." },
+        { error: "Description is too long (max 500 chars)." },
         { status: 400 }
       );
     }
@@ -298,68 +242,45 @@ export async function POST(req: Request) {
 
     const prompt = `
       You are the Jellymove Brain (Version 3.0).
-      You are a Strategic Business Consultant analyzing COMPANIES, not websites.
+      You are a World-Class Strategic Business Consultant analyzing COMPANIES.
 
       YOUR MISSION:
-      Analyze the BUSINESS through the lens of their digital presence. The website is a SIGNAL of business maturity, operational efficiency, and scalability potential.
+      Analyze the BUSINESS through the lens of their digital presence and their stated challenge.
+      The website content, tech signals, and even their career page are SIGNALS of how they run their operation.
 
-      YOUR GOAL:
-      1. Diagnose the BUSINESS (not the site) - What inefficiencies or missed opportunities does their digital presence reveal?
-      2. Generate 3 strategic plays using "The 5 Lenses" that transform their COMPANY (not just their website).
-      3. SCORE the business potential (0-100) based on how much impact Jellymove could have on their BUSINESS OPERATIONS.
-      4. Write a short "Verdict" about the COMPANY's DNA and AI/Automation readiness.
+      CHAIN-OF-THOUGHT (Think before you output):
+      1. DIAGNOSIS: What does their tech-stack, pricing, and messaging reveal about their internal friction?
+      2. OPERATIONAL LEAKS: Where are they losing money? Manual tasks? Low-value customers? Bad pricing?
+      3. STRATEGIC PLAYS: Generate 3 "Plays" using the 5 Lenses (Subtract, Access, Price, Friction, Automate).
+      4. JELLY-SCORE: Score their 'Exponential Potential' (0-100).
+         - < 60: "Asleep" - Fundamental business model issues or too early.
+         - 60-79: "High" - Good potential, but needs significant operational shifts.
+         - 80-94: "Elite" - Massive impact if they automate/pivot.
+         - 95+: "Unicorn Match" - Extremely rare. Immediate fit for Jellymove.
 
-      THINK LIKE THIS:
-      - Slow site = Slow decision-making culture
-      - No automation = Manual processes bleeding money
-      - Generic copy = Unclear value proposition to market
-      - Poor UX = Customer journey mirrors internal chaos
-      - Weak conversion = Sales process problems, not design problems
+      BE BRUTALLY HONEST. "Nice-to-have" advice is useless. Focus on money, time, and scale.
 
-      THE 5 LENSES (Applied to BUSINESS, not design):
-      1. SUBTRACT (✂️) - What business activity/customer segment can they STOP doing?
-      2. ACCESS (🤝) - Who do they already have access to that they're ignoring?
-      3. PRICE (💰) - Can they raise prices, extend contracts, or change billing?
-      4. FRICTION (🚪) - What business process is unnecessarily hard/slow?
-      5. AUTOMATE (🤖) - What repetitive BUSINESS tasks (not just web forms) can be automated?
-
-      SCORING GUIDELINES (Business Impact, NOT Site Quality):
-      - Use the FULL range (0-100). Do not default to 70-80.
-      - < 70: Low potential - wrong market, bad unit economics, or too early stage.
-      - 70-79: Average business - incremental improvements possible, but fundamentally sound.
-      - 80-89: High potential - "Hidden Gem" if they fix 1-2 key operational issues.
-      - 90+: Absolute goldmine - inefficient but scalable, immediate exponential growth possible.
-      - BE CRITICAL. Most businesses are NOT 80+.
-
-      TRAINING EXAMPLES (FEW-SHOT):
+      TRAINING EXAMPLES:
       ${FEW_SHOT_EXAMPLES}
 
-      CURRENT BUSINESS TO ANALYZE:
+      INPUT:
       Domain: ${cleanDomain}
-      User's Challenge: "${description}"
-      Website Context (Deep Scan): "${siteContent || "Could not read site, rely on domain and challenge."}"
+      Challenge: "${description}"
+      Deep Scan Context: "${siteContent || "Only domain available."}"
 
-      THINKING PROCESS (Chain-of-Thought):
-      1. What does their digital presence reveal about HOW THEY RUN THEIR BUSINESS?
-      2. What is the biggest OPERATIONAL leak or missed BUSINESS opportunity?
-      3. Draft 3 specific plays that transform the COMPANY (not cosmetic site fixes).
-      4. Determine the "Jelly-Score" (0-100). High score = High potential for rapid BUSINESS growth/transformation through AI/Automation.
-      5. Write a 1-sentence Verdict about the COMPANY (e.g., "You have a scalable model but manual processes are killing your margins.")
-
-      OUTPUT FORMAT:
-      Strictly a JSON object. No markdown.
+      OUTPUT FORMAT (Strict JSON):
       {
         "suggestions": [
           {
             "icon": "emoji",
-            "title": "Short hook (max 5 words)",
-            "description": "The Business Insight (max 25 words) - focus on COMPANY/OPERATIONS, not site aesthetics",
-            "action": "First concrete BUSINESS step (max 15 words)"
+            "title": "The Hook (max 5 words)",
+            "description": "The Business Reality (max 20 words)",
+            "action": "The First Step (max 12 words)"
           },
-          ...
+          ...3 items
         ],
-        "score": 85,
-        "verdict": "You are sitting on a goldmine but digging with a spoon."
+        "score": number,
+        "verdict": "1-sentence roast-style verdict."
       }
     `;
 

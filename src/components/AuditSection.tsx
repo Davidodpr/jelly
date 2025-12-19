@@ -156,26 +156,54 @@ export default function AuditSection() {
 
       <div className="relative max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 relative">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            className="inline-block px-4 py-1.5 mb-6 rounded-full bg-white border border-gray-200 shadow-sm text-xs font-black tracking-[0.2em] text-[#ff006e] uppercase"
+          >
+            The Gatekeeper 3.0
+          </motion.div>
+          
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-6xl font-black text-gray-900 mb-6 tracking-tight"
+            className="text-5xl md:text-7xl font-black text-gray-900 mb-6 tracking-tight"
           >
-            Is your business{" "}
+            Audition for{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f5ff] to-[#ff006e]">
-              stuck on the bench?
+              Exclusivity.
             </span>
           </motion.h2>
+          
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-xl text-gray-500 max-w-2xl mx-auto"
+            className="text-xl text-gray-500 max-w-2xl mx-auto font-medium"
           >
-            Let our AI analyze your business and put you back in the game. Free
-            & Instant.
+            We don&apos;t sell services. We partner with winners. 
+            Analyze your business potential and see if you qualify.
           </motion.p>
+
+          {/* Scarcity Counter */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            className="mt-10 flex items-center justify-center gap-4"
+          >
+            <div className="h-px w-12 bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ff006e] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#ff006e]"></span>
+              </span>
+              <span className="text-sm font-bold text-gray-900 tracking-widest">
+                SPOTS LEFT IN 2025: <span className="text-[#ff006e]">1</span>
+              </span>
+            </div>
+            <div className="h-px w-12 bg-gray-200" />
+          </motion.div>
         </div>
 
         <div className="grid md:grid-cols-1 gap-12">

@@ -60,56 +60,91 @@ const Hero = () => {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="rounded-3xl border border-gray-200 bg-white p-12 md:p-16 shadow-2xl shadow-gray-200/50 backdrop-blur-xl"
+          transition={{ duration: 0.8 }}
+          className="relative group w-full"
         >
-          <motion.h1
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-xl md:text-2xl font-semibold tracking-widest uppercase text-gray-500"
-          >
-            The game moved.
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5, type: "spring" }}
-            className="mt-2 text-6xl md:text-8xl font-black leading-none -tracking-tighter text-gray-900 drop-shadow-sm"
-          >
-            You didn&apos;t.
-          </motion.p>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="mt-8 md:mt-10 text-lg md:text-xl text-gray-600"
-          >
-            Creative plays that intercept customers mid-move. Nothing but net.
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 }}
-            className="mt-8"
-          >
-            <JellyButton
-              href="#audit-section"
-              className="rounded-full bg-[#ff006e] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[#ff006e]/30 transition hover:bg-[#00f5ff] hover:text-gray-900 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#00f5ff]"
+          {/* Floating Glows */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-[#00f5ff] to-[#ff006e] rounded-3xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200" />
+          
+          <div className="relative rounded-3xl border border-white/20 bg-white/40 p-12 md:p-20 shadow-2xl backdrop-blur-3xl overflow-hidden">
+            {/* Background Texture Overlay */}
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none" />
+            
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="relative"
             >
-              Get Audited
-            </JellyButton>
-          </motion.div>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.0 }}
-            className="mt-6 text-xs text-gray-400 tracking-wide"
-          >
-            Built on millions of real conversations. We&apos;ve heard every &quot;no&quot; so you don&apos;t have to.
-          </motion.p>
+              <h1 className="text-xl md:text-2xl font-black tracking-widest uppercase text-gray-400 mix-blend-multiply">
+                The game moved.
+              </h1>
+            </motion.div>
+
+            <div className="relative mt-4">
+              <motion.p
+                initial={{ opacity: 0, scale: 1.1 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
+                className="text-7xl md:text-9xl font-black leading-none tracking-tight text-gray-900"
+              >
+                You <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f5ff] to-[#ff006e]">didn&apos;t.</span>
+              </motion.p>
+              
+              {/* Animated Accent Line */}
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: "100px" }}
+                transition={{ delay: 1, duration: 1 }}
+                className="h-1 bg-gradient-to-r from-[#00f5ff] to-[#ff006e] mt-4 hidden md:block" 
+              />
+            </div>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="mt-10 text-xl md:text-2xl text-gray-600 font-medium max-w-2xl mx-auto"
+            >
+              Creative plays that intercept customers mid-move. Nothing but net.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 }}
+              className="mt-12 flex flex-col md:flex-row items-center justify-center gap-6"
+            >
+              <JellyButton
+                href="#audit-section"
+                className="rounded-full bg-gray-900 px-10 py-5 text-lg font-black text-white shadow-2xl transition hover:scale-105 hover:bg-black active:scale-95 flex items-center gap-3"
+              >
+                Get Audited <span className="text-[#00f5ff]">→</span>
+              </JellyButton>
+              
+              <div className="flex -space-x-3 overflow-hidden">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400">
+                    {i === 1 ? '💎' : i === 2 ? '🔒' : '🚀'}
+                  </div>
+                ))}
+                <span className="pl-6 text-sm font-bold text-gray-500 flex items-center">
+                  ONLY 3 SPOTS LEFT
+                </span>
+              </div>
+            </motion.div>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.0 }}
+              className="mt-12 text-xs font-bold text-gray-400 tracking-[0.2em] uppercase"
+            >
+              Built on millions of real conversations.
+            </motion.p>
+          </div>
         </motion.div>
 
         <motion.div

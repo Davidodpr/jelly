@@ -3,34 +3,34 @@ import type { JellyTier } from './types';
 // Jelly Score tiers configuration
 export const JELLY_TIERS: JellyTier[] = [
   {
-    range: [0, 20],
+    range: [0, 40],
     emoji: '💤',
-    label: 'Asleep',
-    statusDescription: 'Significant inefficiencies detected',
-  },
-  {
-    range: [20, 40],
-    emoji: '🌱',
-    label: 'Awake',
-    statusDescription: 'Operational gaps identified',
+    label: 'Homework',
+    statusDescription: 'Fix the fundamentals first',
   },
   {
     range: [40, 60],
-    emoji: '🔥',
-    label: 'Ready',
-    statusDescription: 'Solid foundation, room to scale',
+    emoji: '🌱',
+    label: 'Awake',
+    statusDescription: 'Signals of life detected',
   },
   {
     range: [60, 80],
     emoji: '⚡',
-    label: 'Scaling',
-    statusDescription: 'Strong model, minor optimizations',
+    label: 'Playbook',
+    statusDescription: 'Ready for the Golden Playbook',
   },
   {
-    range: [80, 100],
+    range: [80, 94],
     emoji: '🚀',
-    label: 'Exponential',
-    statusDescription: 'Peak efficiency achieved',
+    label: 'Elite',
+    statusDescription: 'Significant scale potential',
+  },
+  {
+    range: [94, 100],
+    emoji: '🦄',
+    label: 'Ticket',
+    statusDescription: 'Unicorn Match Found',
   },
 ];
 
